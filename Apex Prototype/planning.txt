@@ -1,0 +1,8 @@
+I want to build an app which solves the problem faced by students in the preparation for Olympiads. It should be an interactive, engaging and addictive. It must have different options for competitive exams and Olympiads.
+It should have structured curriculum and an ai system which analyzes the performance of the questions asked by the assistant and then build a graph of the performance. Also, it should remember the progress and start from 
+the point where the user has left previously. It should have an leaderboard system so that the user is motivated, along with this it should have a feature of forming a friends group for sharing personal information and to 
+have friendly competition. It should have a streak system to motivate the user to keep on practicing. Regular competitions should be held for motivation. Awards, Badges and praising quotes should be integrated in the system.
+In the login page, the user must provide his/her email id , name and age. After that the user must choose the exam that he/she wants to prepare. There should be professional video based lectures by an animated character to make 
+it engaging with regular trivia questions. The lectures should not be in written form but video based. After every main topic their should be a quiz based on that topic along with a mistake counter with structured solutions. I 
+I also want to integrate written answer type questions, in this function the user must solve the question on paper and share the screen with apex in which it will tell at what step it is wrong and what should be done to correct it.
+Further it should include animated features in which it should provide the corrected solution along with the video/photo that the user would be sharing. 

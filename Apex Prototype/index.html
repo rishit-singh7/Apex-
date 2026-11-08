@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#f8f8f3">
+    <title>Apex — Learn a little every day</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="app.js" defer></script>
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="#" aria-label="Apex home">
+        <span class="brand-mark" aria-hidden="true">A</span>
+        <span>apex<span class="brand-period">.</span></span>
+      </a>
+      <div class="topbar-stats" aria-label="Your learning stats">
+        <div class="stat-pill">
+          <span aria-hidden="true">🔥</span>
+          <span id="streak-count">0</span>
+          <span class="stat-label">day streak</span>
+        </div>
+        <div class="stat-pill">
+          <span aria-hidden="true">⭐</span>
+          <span id="points-count">0</span>
+          <span class="stat-label">points</span>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <section id="home-screen" class="screen home-screen">
+        <div class="welcome-copy">
+          <p class="eyebrow">YOUR NEXT BIG THING STARTS HERE</p>
+          <h1>Small steps.<br><span>Brilliant results.</span></h1>
+          <p class="intro">Build your problem-solving skills with short, satisfying practice sessions.</p>
+        </div>
+
+        <section class="learning-card" aria-labelledby="learning-title">
+          <div class="card-heading">
+            <div>
+              <p class="eyebrow">YOUR LEARNING PATH</p>
+              <h2 id="learning-title">Choose your goal</h2>
+            </div>
+            <span class="sparkle" aria-hidden="true">✦</span>
+          </div>
+
+          <label for="exam-select">What are you preparing for?</label>
+          <select id="exam-select">
+            <option value="Math Olympiad">Math Olympiad</option>
+            <option value="Science Olympiad">Science Olympiad</option>
+            <option value="JEE Foundation">JEE Foundation</option>
+            <option value="Other">Another goal</option>
+          </select>
+
+          <div class="lesson-row">
+            <div class="lesson-icon" aria-hidden="true">✎</div>
+            <div class="lesson-details">
+              <span class="lesson-label">TODAY'S PRACTICE</span>
+              <h3>Number patterns</h3>
+              <p>3 questions · about 3 minutes</p>
+            </div>
+            <span class="lesson-status" id="lesson-status">READY</span>
+          </div>
+
+          <div class="saved-progress" id="saved-progress" hidden>
+            <div class="progress-label">
+              <span>Last time you were here</span>
+              <span id="saved-progress-text"></span>
+            </div>
+            <div class="progress-track" aria-hidden="true">
+              <div class="progress-fill" id="saved-progress-fill"></div>
+            </div>
+          </div>
+
+          <button class="primary-button" id="start-button" type="button">
+            Start today's practice <span aria-hidden="true">→</span>
+          </button>
+          <p class="privacy-note">Your progress is saved on this device.</p>
+        </section>
+
+        <div class="encouragement">
+          <span class="encouragement-icon" aria-hidden="true">✦</span>
+          <p><strong>Curiosity is a superpower.</strong><br>One question at a time, you’re getting stronger.</p>
+        </div>
+      </section>
+
+      <section id="quiz-screen" class="screen quiz-screen" hidden>
+        <button class="back-button" id="back-button" type="button">
+          <span aria-hidden="true">←</span> Back to your path
+        </button>
+        <div class="quiz-heading">
+          <div>
+            <p class="eyebrow" id="quiz-exam">MATH OLYMPIAD</p>
+            <h1>Number patterns</h1>
+          </div>
+          <span class="quiz-counter" id="question-counter">1 / 3</span>
+        </div>
+        <div class="progress-track quiz-progress" role="progressbar" aria-label="Practice progress" aria-valuemin="0" aria-valuemax="3" aria-valuenow="0">
+          <div class="progress-fill" id="quiz-progress-fill"></div>
+        </div>
+
+        <article class="question-card">
+          <p class="question-label" id="question-label">QUESTION 1</p>
+          <h2 id="question-text"></h2>
+          <div class="answer-list" id="answer-list"></div>
+          <div class="answer-feedback" id="answer-feedback" role="status" aria-live="polite" hidden>
+            <h3 id="feedback-title"></h3>
+            <p id="feedback-explanation"></p>
+          </div>
+          <button class="primary-button next-button" id="next-button" type="button" hidden>
+            Next question <span aria-hidden="true">→</span>
+          </button>
+        </article>
+        <p class="quiz-footnote">Getting one wrong is part of getting better. Take your time.</p>
+      </section>
+
+      <section id="complete-screen" class="screen complete-screen" hidden>
+        <div class="completion-mark" aria-hidden="true">✦</div>
+        <p class="eyebrow">PRACTICE COMPLETE</p>
+        <h1>You showed up.<br><span>That’s a win.</span></h1>
+        <p class="completion-copy" id="completion-copy"></p>
+        <div class="result-card">
+          <div><span class="result-number" id="result-score">0/3</span><span class="result-label">correct</span></div>
+          <div class="result-divider" aria-hidden="true"></div>
+          <div><span class="result-number" id="result-points">+0</span><span class="result-label">points earned</span></div>
+        </div>
+        <button class="primary-button" id="finish-button" type="button">
+          Back to my learning path <span aria-hidden="true">→</span>
+        </button>
+      </section>
+    </main>
+
+    <footer class="page-footer">APEX · LEARN BRAVELY</footer>
+  </body>
+</html>
