@@ -1,0 +1,9 @@
+.apex-venv/
+__pycache__/
+*.py[cod]
+apex.sqlite3
+apex.sqlite3-shm
+apex.sqlite3-wal
+Apex_Accounts.xlsx
+.apex-server.pid
+.apex-server.log

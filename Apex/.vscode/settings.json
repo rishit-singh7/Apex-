@@ -1,0 +1,19 @@
+{
+  "python.defaultInterpreterPath": ".apex-venv\\Scripts\\python.exe",
+  "explorer.fileNesting.enabled": true,
+  "explorer.fileNesting.expand": false,
+  "explorer.fileNesting.patterns": {
+    "backend.py": "test_backend.py",
+    "export_accounts.bat": "export_accounts.py",
+    "requirements.txt": "requirements-dev.txt",
+    "start_apex.bat": "start_apex.py",
+    "stop_apex.bat": "stop_apex.ps1"
+  },
+  "files.exclude": {
+    "**/__pycache__": true,
+    "**/.apex-venv": true,
+    "**/.apex-server.log": true,
+    "**/.apex-server.pid": true,
+    "**/.venv": true
+  }
+}

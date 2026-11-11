@@ -1,0 +1,453 @@
+<!doctype html>
+<html lang="en-GB">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#f6f8f2">
+    <meta name="description" content="Learn Class 10 SOF IMO Quadratic Equations through visual lessons, worked examples and Olympiad practice.">
+    <title>Quadratic Equations | Apex</title>
+    <script src="/quadratic-equations-content.js" defer></script>
+    <script src="/quadratic-equations.js" defer></script>
+    <style>
+      :root {
+        color-scheme: light;
+        --ink: #17241f;
+        --muted: #748078;
+        --green: #237a52;
+        --green-dark: #195e3d;
+        --paper: #f6f8f2;
+        --line: #e4e9e1;
+        font-family: "DM Sans", "Segoe UI", sans-serif;
+        font-synthesis: none;
+        text-rendering: optimizeLegibility;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      * { box-sizing: border-box; }
+      button, a { font: inherit; -webkit-tap-highlight-color: transparent; }
+      body {
+        min-width: 320px;
+        min-height: 100vh;
+        margin: 0;
+        color: var(--ink);
+        background:
+          radial-gradient(ellipse at 12% 18%, rgba(80, 146, 97, .15), transparent 31rem),
+          var(--paper);
+      }
+      .site-header {
+        position: sticky;
+        z-index: 5;
+        top: 0;
+        min-height: 66px;
+        padding: 10px max(20px, calc((100vw - 980px) / 2));
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        border-bottom: 1px solid rgba(36, 66, 49, .1);
+        background: rgba(248, 250, 245, .95);
+        backdrop-filter: blur(12px);
+      }
+      .brand {
+        flex: 0 0 auto;
+        color: var(--ink);
+        font-size: 23px;
+        font-weight: 800;
+        letter-spacing: -1.5px;
+        text-decoration: none;
+      }
+      .brand-period { color: var(--green); }
+      .breadcrumb {
+        min-width: 0;
+        color: var(--muted);
+        font-size: 10px;
+        line-height: 1.5;
+        text-align: right;
+      }
+      .breadcrumb a { color: var(--green-dark); text-decoration: none; }
+      main {
+        width: min(100% - 36px, 900px);
+        min-height: calc(100vh - 130px);
+        margin: 0 auto;
+        padding: 32px 0 108px;
+      }
+      h1, h2, h3, p { margin-top: 0; }
+      h1, h2, h3 { font-family: "Manrope", "Segoe UI", sans-serif; }
+      h1 {
+        margin-bottom: 10px;
+        font-size: clamp(29px, 5vw, 42px);
+        letter-spacing: -1.7px;
+        line-height: 1.14;
+      }
+      .eyebrow {
+        margin-bottom: 8px;
+        color: var(--green);
+        font-size: 10px;
+        font-weight: 800;
+        letter-spacing: 1.5px;
+        text-transform: uppercase;
+      }
+      .intro {
+        max-width: 740px;
+        margin-bottom: 22px;
+        color: var(--muted);
+        font-size: 14px;
+        line-height: 1.75;
+      }
+      .chapter-note, .source-note {
+        margin: 16px 0;
+        padding: 14px 16px;
+        border: 1px solid #dce9dd;
+        border-radius: 12px;
+        background: rgba(255,255,255,.86);
+        color: #53645a;
+        font-size: 11px;
+        line-height: 1.7;
+      }
+      .source-note { border-color: var(--line); }
+      .source-note a { color: var(--green-dark); }
+      .topic-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr));
+        gap: 11px;
+      }
+      .topic-card {
+        min-height: 108px;
+        padding: 15px;
+        display: grid;
+        grid-template-columns: 1fr auto;
+        align-items: start;
+        gap: 10px;
+        color: var(--ink);
+        border: 1px solid var(--line);
+        border-radius: 13px;
+        background: rgba(255,255,255,.94);
+        text-align: left;
+        cursor: pointer;
+        transition: border-color .16s, background .16s, transform .16s;
+      }
+      .topic-card:hover, .topic-card:focus-visible {
+        border-color: #9dc9a8;
+        background: #fcfffc;
+        transform: translateY(-1px);
+      }
+      .topic-card h2 { margin-bottom: 5px; font-size: 15px; line-height: 1.4; }
+      .topic-card p { margin-bottom: 8px; color: var(--muted); font-size: 11px; line-height: 1.55; }
+      .topic-badges, .lesson-badges { display: flex; flex-wrap: wrap; gap: 5px; }
+      .badge {
+        padding: 4px 7px;
+        display: inline-flex;
+        border-radius: 999px;
+        background: #edf5ee;
+        color: var(--green-dark);
+        font-size: 9px;
+        font-weight: 750;
+        line-height: 1.35;
+      }
+      .badge.extension { background: #fff5df; color: #795a12; }
+      .badge.revision { background: #edf1fa; color: #40517b; }
+      .card-arrow { color: var(--green); font-size: 20px; }
+      .lesson-topbar {
+        margin-bottom: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+      }
+      .back-button, .step-button {
+        min-height: 39px;
+        padding: 8px 11px;
+        color: var(--green-dark);
+        border: 1px solid #dce6db;
+        border-radius: 9px;
+        background: rgba(255,255,255,.9);
+        font-size: 10px;
+        font-weight: 700;
+        cursor: pointer;
+      }
+      .lesson-card {
+        padding: clamp(18px, 4vw, 32px);
+        border: 1px solid var(--line);
+        border-radius: 15px;
+        background: rgba(255,255,255,.97);
+        box-shadow: 0 8px 26px rgba(27,55,37,.04);
+      }
+      .lesson-card > h1 { font-size: clamp(25px, 4.5vw, 35px); }
+      .lesson-intro {
+        margin: 14px 0 20px;
+        color: #53645a;
+        font-size: 14px;
+        line-height: 1.8;
+      }
+      .lesson-section { margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--line); }
+      .lesson-section h2 { margin-bottom: 11px; font-size: 19px; letter-spacing: -.4px; }
+      .lesson-section p, .lesson-section li { color: #4f5f55; font-size: 13px; line-height: 1.75; }
+      .math-copy { overflow-wrap: anywhere; }
+      .bullet-list { padding-left: 21px; }
+      .worked-example, .callout, .fact-card, .question-card, .visual-card {
+        margin-top: 12px;
+        padding: 15px;
+        border: 1px solid #e6eae3;
+        border-radius: 12px;
+        background: #fcfdfa;
+      }
+      .worked-example summary, .question-card details summary {
+        color: var(--green-dark);
+        font-size: 12px;
+        font-weight: 750;
+        line-height: 1.6;
+        cursor: pointer;
+      }
+      .worked-example ol, .solution ol { margin: 9px 0 0; padding-left: 21px; }
+      .worked-example li, .solution li { padding: 2px 0; }
+      .callout h3, .fact-card h3, .visual-card h3, .graph-card h3 {
+        margin-bottom: 8px;
+        font-size: 13px;
+        line-height: 1.45;
+      }
+      .callout.extension { border-color: #e4dfef; background: #f8f6fc; }
+      .callout.warning { border-color: #eee2c3; background: #fffaf0; }
+      .fact-card { border-color: #e7dfbd; background: #fffdf4; }
+      .reveal-button {
+        min-height: 39px;
+        margin-top: 8px;
+        padding: 8px 12px;
+        color: #fff;
+        border: 0;
+        border-radius: 9px;
+        background: var(--green-dark);
+        font-size: 11px;
+        font-weight: 700;
+        cursor: pointer;
+      }
+      .reveal-button:hover { background: var(--green); }
+      .answer-panel, .solution {
+        margin-top: 10px;
+        padding: 12px;
+        border-left: 3px solid var(--green);
+        border-radius: 0 9px 9px 0;
+        background: #f0f8f1;
+      }
+      .question-list { display: grid; gap: 12px; }
+      .question-card { margin: 0; }
+      .question-number {
+        margin-bottom: 5px;
+        color: var(--green);
+        font-size: 9px !important;
+        font-weight: 800;
+        letter-spacing: .8px;
+        text-transform: uppercase;
+      }
+      .question-prompt { margin-bottom: 8px; color: var(--ink) !important; font-weight: 700; }
+      .option-list { margin: 0 0 8px; padding-left: 24px; }
+      .option-list li { padding: 2px 0; }
+      .solution p, .solution li { font-size: 11px; }
+      .solution p:last-child { margin-bottom: 0; }
+
+      .visual-card { margin: 18px 0; background: linear-gradient(145deg, #fff, #f7fbf6); }
+      .equation-terms {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 8px;
+      }
+      .equation-term {
+        min-height: 90px;
+        padding: 12px 8px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 5px;
+        border: 1px solid #dce9dd;
+        border-radius: 10px;
+        background: #fff;
+        text-align: center;
+      }
+      .equation-term strong { color: var(--green-dark); font: 700 22px "Cambria Math", Cambria, serif; }
+      .equation-term span { color: var(--muted); font-size: 10px; line-height: 1.4; }
+      .branch-svg, .area-svg, .rectangle-svg { width: 100%; height: auto; display: block; overflow: visible; }
+      .branch-connector { fill: none; stroke: #87ae91; stroke-width: 2; }
+      .branch-root { fill: #eaf4eb; stroke: #8dbb96; stroke-width: 1.5; }
+      .branch-step { fill: #fff; stroke: #c9dbcc; stroke-width: 1.5; }
+      .branch-answer { fill: #eaf3ff; stroke: #9ab4e2; stroke-width: 1.5; }
+      .branch-text { fill: #23392c; font: 13px "Segoe UI", sans-serif; font-weight: 650; }
+      .visual-caption, .graph-caption { margin-top: 8px; color: var(--muted); font-size: 10px; line-height: 1.55; }
+      .area-outline { fill: none; stroke: #416f51; stroke-width: 2; }
+      .area-x2 { fill: #dcefe0; stroke: #6ea27b; stroke-width: 1.5; }
+      .area-strip { fill: #edf5d9; stroke: #9eae61; stroke-width: 1.5; }
+      .area-corner { fill: #ffe9c9; stroke: #d5a261; stroke-width: 1.5; }
+      .area-label { fill: #263d2e; font: 15px "Cambria Math", Cambria, serif; font-weight: 700; }
+      .area-equation { fill: #195e3d; font: 17px "Cambria Math", Cambria, serif; font-weight: 700; }
+      .formula-flow { display: grid; gap: 8px; }
+      .formula-step {
+        display: grid;
+        grid-template-columns: 30px minmax(0, 1fr);
+        align-items: center;
+        gap: 7px 10px;
+        padding: 10px;
+        border: 1px solid #e2eae0;
+        border-radius: 10px;
+        background: #fff;
+      }
+      .formula-step-number {
+        width: 27px;
+        height: 27px;
+        display: grid;
+        place-items: center;
+        border-radius: 50%;
+        background: #e7f2e8;
+        color: var(--green-dark);
+        font-size: 12px;
+        font-weight: 800;
+      }
+      .formula-step-equation {
+        color: #214a32;
+        font: 650 clamp(13px, 2.4vw, 18px) "Cambria Math", Cambria, serif;
+        overflow-wrap: anywhere;
+      }
+      .formula-step-note { grid-column: 2; color: var(--muted); font-size: 10px; }
+
+      .graph-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 285px), 1fr)); gap: 10px; }
+      .graph-card { min-width: 0; margin: 0; padding: 12px; border: 1px solid #e6eae3; border-radius: 11px; background: #fff; }
+      .graph-svg { width: 100%; height: auto; display: block; }
+      .graph-gridline { stroke: #e8ede7; stroke-width: 1; }
+      .graph-axis { stroke: #45554a; stroke-width: 1.6; }
+      .graph-text { fill: #53645a; font: 10px "Segoe UI", sans-serif; }
+      .graph-label, .root-label { fill: #17241f; font: 10px "Segoe UI", sans-serif; font-weight: 700; }
+      .parabola { fill: none; stroke: #237a52; stroke-width: 3.2; stroke-linecap: round; }
+      .root-point { fill: #c0523f; stroke: #fff; stroke-width: 2; }
+      .vertex-point { fill: #245cdb; stroke: #fff; stroke-width: 2; }
+      .vertex-label { fill: #245cdb; font: 9px "Segoe UI", sans-serif; font-weight: 700; }
+      .graph-caption { display: grid; gap: 3px; }
+      .graph-equation { color: var(--green-dark); font: 650 12px "Cambria Math", Cambria, serif; }
+      .graph-discriminant { color: #53645a; }
+      .rectangle-shape { fill: #e5f1e7; stroke: #39704b; stroke-width: 2; }
+      .rectangle-label { fill: #195e3d; font: 14px "Cambria Math", Cambria, serif; font-weight: 700; }
+      .rectangle-area { fill: #344c3a; font: 16px "Cambria Math", Cambria, serif; font-weight: 700; }
+      .rectangle-equation { fill: #195e3d; font: 17px "Cambria Math", Cambria, serif; font-weight: 700; }
+
+      .lesson-pagination { margin-top: 14px; display: flex; justify-content: space-between; gap: 10px; }
+      .step-button:disabled { opacity: .45; cursor: not-allowed; }
+      [hidden] { display: none !important; }
+      .bottom-nav {
+        position: fixed;
+        z-index: 10;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        min-height: 66px;
+        padding: 7px max(12px, calc((100vw - 640px) / 2)) calc(7px + env(safe-area-inset-bottom));
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        border-top: 1px solid rgba(36,66,49,.12);
+        background: rgba(255,255,255,.97);
+        box-shadow: 0 -7px 24px rgba(27,55,37,.07);
+        backdrop-filter: blur(14px);
+      }
+      .nav-link {
+        min-width: 0;
+        padding: 5px 3px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 3px;
+        color: #78827b;
+        border-radius: 10px;
+        font-size: 9px;
+        font-weight: 650;
+        text-align: center;
+        text-decoration: none;
+      }
+      .nav-icon { font-size: 18px; line-height: 1; }
+
+      @media (max-width: 560px) {
+        .site-header { min-height: 60px; padding-right: 12px; padding-left: 12px; }
+        .breadcrumb { max-width: 75%; font-size: 9px; }
+        main { padding-top: 23px; }
+        .topic-grid { grid-template-columns: 1fr; }
+        .lesson-pagination { align-items: stretch; }
+        .step-button { max-width: 48%; }
+        .equation-terms { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        .branch-text { font-size: 12px; }
+        .bottom-nav { min-height: 64px; }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        *, *::before, *::after {
+          scroll-behavior: auto !important;
+          animation-duration: .01ms !important;
+          animation-iteration-count: 1 !important;
+          transition-duration: .01ms !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="/profile" aria-label="Apex home">apex<span class="brand-period">.</span></a>
+      <nav class="breadcrumb" aria-label="Breadcrumb">
+        <a href="/profile">Class 10</a> › <a href="/profile">SOF IMO</a> ›
+        <a href="/quadratic-equations">Quadratic Equations</a><span id="breadcrumb-topic"></span>
+      </nav>
+    </header>
+
+    <main>
+      <section id="access-message" class="chapter-note" aria-live="polite" hidden></section>
+      <section id="landing-view" aria-labelledby="chapter-title">
+        <p class="eyebrow">CLASS 10 · SOF IMO · SECTION 2</p>
+        <h1 id="chapter-title">Quadratic Equations</h1>
+        <p class="intro">
+          What do a rectangle’s area, a parabola, and two possible answers have
+          in common? Explore quadratic equations through visual explanations,
+          carefully checked examples, and original Olympiad challenges.
+        </p>
+        <div class="chapter-note">
+          <strong>Know what is core:</strong> The 2026–27 CBSE Class X
+          Mathematics curriculum specifies real-root solutions by factorisation
+          and the quadratic formula, and the relationship between the
+          discriminant and the nature of roots. The NCERT chapter also
+          demonstrates completing the square; it is presented here as
+          enrichment and formula derivation, not a separately listed CBSE
+          solving method.
+          Root–coefficient work is labelled as a Polynomials connection or
+          Olympiad extension.
+        </div>
+        <div class="topic-grid" id="quadratic-topic-list" aria-label="Quadratic Equations topics"></div>
+        <aside class="source-note">
+          <strong>Official references checked:</strong>
+          <a href="https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart1/Maths_SecP1X_2026-27.pdf" target="_blank" rel="noopener noreferrer">CBSE Class X Mathematics 2026–27 curriculum (PDF)</a>
+          · <a href="https://ncert.nic.in/textbook/pdf/jemh104.pdf" target="_blank" rel="noopener noreferrer">NCERT Class X Mathematics, Quadratic Equations chapter</a>
+          · <a href="https://sofworld.org/imo/class-10/imo-syllabus/imo-syllabus-class-10" target="_blank" rel="noopener noreferrer">SOF IMO Class 10 syllabus and exam pattern</a>.
+          SOF lists Quadratic Equations in Section 2; its syllabus page does not itemise individual solution methods.
+        </aside>
+      </section>
+
+      <section id="lesson-view" aria-live="polite" hidden>
+        <div class="lesson-topbar">
+          <button class="back-button" id="back-to-topics" type="button">← Back to Quadratic Equations</button>
+          <span class="lesson-badges" id="lesson-badges"></span>
+        </div>
+        <article class="lesson-card" id="lesson-content"></article>
+        <nav class="lesson-pagination" aria-label="Quadratic Equations topic navigation">
+          <button class="step-button" id="previous-topic" type="button">← Previous Topic</button>
+          <button class="step-button" id="next-topic" type="button">Next Topic →</button>
+        </nav>
+      </section>
+    </main>
+
+    <nav class="bottom-nav" aria-label="Main navigation">
+      <a class="nav-link" href="/profile" aria-label="Home">
+        <span class="nav-icon" aria-hidden="true">⌂</span><span>Home</span>
+      </a>
+      <a class="nav-link" href="/profile?tab=progress">
+        <span class="nav-icon" aria-hidden="true">◷</span><span>Everyday progress</span>
+      </a>
+      <a class="nav-link" href="/profile?tab=updates">
+        <span class="nav-icon" aria-hidden="true">✦</span><span>Updates</span>
+      </a>
+      <a class="nav-link" href="/profile?tab=profile">
+        <span class="nav-icon" aria-hidden="true">◉</span><span>Profile</span>
+      </a>
+    </nav>
+  </body>
+</html>

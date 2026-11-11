@@ -1,0 +1,596 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#123c2d">
+    <meta name="description" content="Your personal Apex Olympiad learning dashboard.">
+    <title>Apex learning dashboard</title>
+    <script src="/profile.js" defer></script>
+    <style>
+      :root {
+        color-scheme: light;
+        --ink: #17241f;
+        --muted: #748078;
+        --green: #237a52;
+        --green-dark: #195e3d;
+        --green-pale: #e8f3eb;
+        --paper: #f6f8f2;
+        --line: #e4e9e1;
+        --white: #fff;
+        font-family: "DM Sans", "Segoe UI", sans-serif;
+        font-synthesis: none;
+        text-rendering: optimizeLegibility;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      * { box-sizing: border-box; }
+
+      body {
+        min-width: 320px;
+        min-height: 100vh;
+        margin: 0;
+        color: var(--ink);
+        background:
+          radial-gradient(ellipse at 12% 18%, rgba(80, 146, 97, .16), transparent 31rem),
+          var(--paper);
+      }
+
+      button { font: inherit; }
+      button, a { -webkit-tap-highlight-color: transparent; }
+
+      .site-header {
+        position: sticky;
+        z-index: 5;
+        top: 0;
+        height: 68px;
+        padding: 0 max(20px, calc((100vw - 1060px) / 2));
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border-bottom: 1px solid rgba(36, 66, 49, .1);
+        background: rgba(248, 250, 245, .94);
+        backdrop-filter: blur(12px);
+      }
+
+      .brand {
+        color: var(--ink);
+        font-size: 23px;
+        font-weight: 800;
+        letter-spacing: -1.5px;
+        text-decoration: none;
+      }
+
+      .brand-period { color: var(--green); }
+
+      .header-greeting {
+        margin: 0;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 600;
+      }
+
+      main {
+        width: min(100% - 36px, 960px);
+        min-height: calc(100vh - 148px);
+        margin: 0 auto;
+      padding: 32px 0 100px;
+      }
+
+      .view[hidden] { display: none; }
+
+      .eyebrow {
+        margin: 0 0 8px;
+        color: var(--green);
+        font-size: 10px;
+        font-weight: 800;
+        letter-spacing: 1.6px;
+        text-transform: uppercase;
+      }
+
+      h1, h2, h3, p { margin-top: 0; }
+      h1, h2, h3 { font-family: "Manrope", "Segoe UI", sans-serif; }
+
+      h1 {
+        margin-bottom: 10px;
+        font-size: clamp(29px, 5vw, 42px);
+        letter-spacing: -1.8px;
+        line-height: 1.12;
+      }
+
+      .intro {
+        max-width: 660px;
+        margin-bottom: 26px;
+        color: var(--muted);
+        font-size: 14px;
+        line-height: 1.7;
+      }
+
+      .learning-summary {
+        margin-bottom: 20px;
+        padding: 15px 18px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        border: 1px solid #dce9dd;
+        border-radius: 14px;
+        background: rgba(255, 255, 255, .86);
+      }
+
+      .summary-icon {
+        width: 38px;
+        height: 38px;
+        flex: 0 0 auto;
+        display: grid;
+        place-items: center;
+        border-radius: 12px;
+        background: var(--green-pale);
+        font-size: 19px;
+      }
+
+      .learning-summary strong {
+        display: block;
+        margin-bottom: 3px;
+        font-size: 13px;
+      }
+
+      .learning-summary span {
+        color: var(--muted);
+        font-size: 11px;
+      }
+
+      .topic-section {
+        margin-top: 22px;
+        padding: 20px;
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        background: rgba(255, 255, 255, .9);
+        box-shadow: 0 8px 26px rgba(27, 55, 37, .04);
+      }
+
+      .topic-section-heading {
+        margin-bottom: 14px;
+      }
+
+      .topic-section h2 {
+        margin: 0 0 5px;
+        font-size: 19px;
+        letter-spacing: -.5px;
+      }
+
+      .topic-section-heading p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.5;
+      }
+
+      .topic-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(min(100%, 210px), 1fr));
+        gap: 10px;
+      }
+
+      .topic-button {
+        min-height: 53px;
+        padding: 11px 13px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        color: var(--ink);
+        border: 1px solid #e6eae3;
+        border-radius: 10px;
+        background: #fcfdfa;
+        font-size: 12px;
+        font-weight: 650;
+        line-height: 1.4;
+        text-align: left;
+        cursor: pointer;
+        transition: border-color .16s, background .16s, transform .16s;
+      }
+
+      .topic-button:hover,
+      .topic-button[aria-pressed="true"] {
+        border-color: #9dc9a8;
+        background: #f0f8f1;
+        transform: translateY(-1px);
+      }
+
+      .topic-arrow {
+        flex: 0 0 auto;
+        color: var(--green);
+        font-size: 16px;
+      }
+
+      .selected-topic {
+        margin-top: 18px;
+        padding: 18px;
+        border: 1px solid #cfe3d2;
+        border-radius: 14px;
+        background: #f0f8f1;
+      }
+
+      .selected-topic h2 {
+        margin-bottom: 6px;
+        font-size: 18px;
+      }
+
+      .selected-topic p:last-child {
+        margin-bottom: 0;
+        color: #53645a;
+        font-size: 12px;
+        line-height: 1.6;
+      }
+
+      .content-card {
+        margin-top: 20px;
+        padding: clamp(20px, 4vw, 30px);
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        background: rgba(255, 255, 255, .92);
+      }
+
+      .content-card h2 {
+        margin-bottom: 8px;
+        font-size: 20px;
+      }
+
+      .content-card > p {
+        margin-bottom: 0;
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.7;
+      }
+
+      .progress-empty {
+        margin-top: 18px;
+        padding: 18px;
+        border-radius: 12px;
+        background: #f5f8f3;
+        color: #58675d;
+        font-size: 12px;
+        line-height: 1.6;
+      }
+
+      .profile-details {
+        margin: 20px 0 0;
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+      }
+
+      .profile-item {
+        min-width: 0;
+        padding: 14px;
+        border: 1px solid var(--line);
+        border-radius: 11px;
+        background: #fcfdfa;
+      }
+
+      dt {
+        margin-bottom: 6px;
+        color: var(--muted);
+        font-size: 9px;
+        font-weight: 800;
+        letter-spacing: .9px;
+        text-transform: uppercase;
+      }
+
+      dd {
+        margin: 0;
+        overflow-wrap: anywhere;
+        font-size: 13px;
+        font-weight: 700;
+      }
+
+      .profile-actions {
+        margin-top: 18px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+
+      .action-link, .logout-button {
+        min-height: 40px;
+        padding: 0 14px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid #dfe5dc;
+        border-radius: 9px;
+        background: transparent;
+        color: var(--green-dark);
+        font-size: 11px;
+        font-weight: 700;
+        text-decoration: none;
+        cursor: pointer;
+      }
+
+      .logout-button {
+        min-height: 34px;
+        padding: 0 11px;
+        color: #53645a;
+        font-size: 10px;
+      }
+
+      .message {
+        margin: 14px 0 0;
+        color: var(--muted);
+        font-size: 11px;
+        line-height: 1.5;
+      }
+
+      .message.is-error { color: #963c35; }
+
+      .bottom-nav {
+        position: fixed;
+        z-index: 10;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        min-height: 68px;
+        padding: 7px max(12px, calc((100vw - 640px) / 2)) calc(7px + env(safe-area-inset-bottom));
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        border-top: 1px solid rgba(36, 66, 49, .12);
+        background: rgba(255, 255, 255, .97);
+        box-shadow: 0 -7px 24px rgba(27, 55, 37, .07);
+        backdrop-filter: blur(14px);
+      }
+
+      .nav-button {
+        min-width: 0;
+        padding: 5px 3px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 3px;
+        color: #78827b;
+        border: 0;
+        border-radius: 10px;
+        background: transparent;
+        font-size: 9px;
+        font-weight: 650;
+        cursor: pointer;
+      }
+
+      .nav-button[aria-current="page"] {
+        color: var(--green-dark);
+        background: #eff7f0;
+      }
+
+      .nav-icon { font-size: 18px; line-height: 1; }
+      .nav-label { text-align: center; line-height: 1.1; }
+
+      [hidden] { display: none !important; }
+
+      @media (max-width: 520px) {
+        .site-header { height: 60px; }
+        main { padding-top: 24px; }
+        .header-greeting { max-width: 54%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .topic-section { padding: 16px; }
+        .profile-details { grid-template-columns: 1fr; }
+        .bottom-nav { min-height: 64px; }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="/profile" aria-label="Apex home">apex<span class="brand-period">.</span></a>
+      <p class="header-greeting" id="header-greeting">Your learning dashboard</p>
+      <button class="logout-button" id="logout-button" type="button">Log out</button>
+    </header>
+
+    <main>
+      <section class="view" id="home-view" aria-labelledby="home-title">
+        <p class="eyebrow">YOUR LEARNING PATH</p>
+        <h1 id="home-title">Choose what to practice</h1>
+        <p class="intro" id="home-intro">
+          Pick a topic to focus your Olympiad preparation. Your choices are based
+          on the learning goal and class saved in your profile.
+        </p>
+        <div class="learning-summary">
+          <div class="summary-icon" aria-hidden="true">✦</div>
+          <div>
+            <strong id="learning-summary-title">Your saved learning path</strong>
+            <span id="learning-summary-details">Loading your learning details…</span>
+          </div>
+        </div>
+
+        <div id="sof-imo-content" hidden>
+          <section class="topic-section" aria-labelledby="logical-reasoning-title">
+            <div class="topic-section-heading">
+              <p class="eyebrow">SECTION 1</p>
+              <h2 id="logical-reasoning-title">Logical Reasoning</h2>
+              <p>Logical Reasoning practice options will be added here later.</p>
+            </div>
+            <div class="topic-grid">
+              <button class="topic-button" type="button" data-topic="Logical Reasoning">
+                <span>Open Logical Reasoning</span><span class="topic-arrow" aria-hidden="true">›</span>
+              </button>
+            </div>
+          </section>
+
+          <section class="topic-section" aria-labelledby="mathematical-reasoning-title">
+            <div class="topic-section-heading">
+              <p class="eyebrow">SECTION 2</p>
+              <h2 id="mathematical-reasoning-title">Mathematical Reasoning</h2>
+              <p>Select a chapter to focus your practice.</p>
+            </div>
+            <div class="topic-grid" id="mathematical-topics"></div>
+          </section>
+
+          <section class="topic-section" aria-labelledby="everyday-mathematics-title">
+            <div class="topic-section-heading">
+              <p class="eyebrow">SECTION 3</p>
+              <h2 id="everyday-mathematics-title">Everyday Mathematics</h2>
+              <p>Based on Mathematical Reasoning and Quantitative Aptitude.</p>
+            </div>
+            <div class="topic-grid">
+              <button class="topic-button" type="button" data-topic="Everyday Mathematics">
+                <span>Practice Everyday Mathematics</span><span class="topic-arrow" aria-hidden="true">›</span>
+              </button>
+            </div>
+          </section>
+
+          <section class="topic-section" aria-labelledby="achievers-title">
+            <div class="topic-section-heading">
+              <p class="eyebrow">SECTION 4</p>
+              <h2 id="achievers-title">Achievers</h2>
+              <p>Higher Order Thinking Questions (HOTS) based on Section 2 topics.</p>
+            </div>
+            <div class="topic-grid">
+              <button class="topic-button" type="button" data-topic="Achievers: HOTS">
+                <span>Practice Achievers questions</span><span class="topic-arrow" aria-hidden="true">›</span>
+              </button>
+            </div>
+          </section>
+        </div>
+
+        <div id="sof-nso-class-10-content" hidden>
+          <section class="topic-section" aria-labelledby="nso-logical-reasoning-title">
+            <div class="topic-section-heading">
+              <p class="eyebrow">SECTION 1</p>
+              <h2 id="nso-logical-reasoning-title">Logical Reasoning</h2>
+              <p>Practice logical reasoning questions for SOF NSO.</p>
+            </div>
+            <div class="topic-grid" id="nso-logical-reasoning-topics"></div>
+          </section>
+
+          <section class="topic-section" aria-labelledby="chemistry-title">
+            <div class="topic-section-heading">
+              <p class="eyebrow">SECTION 2</p>
+              <h2 id="chemistry-title">Chemistry</h2>
+              <p>Choose a chemistry chapter to practice.</p>
+            </div>
+            <div class="topic-grid" id="chemistry-topics"></div>
+          </section>
+
+          <section class="topic-section" aria-labelledby="physics-title">
+            <div class="topic-section-heading">
+              <p class="eyebrow">SECTION 3</p>
+              <h2 id="physics-title">Physics</h2>
+              <p>Choose a physics chapter to practice.</p>
+            </div>
+            <div class="topic-grid" id="physics-topics"></div>
+          </section>
+
+          <section class="topic-section" aria-labelledby="biology-title">
+            <div class="topic-section-heading">
+              <p class="eyebrow">SECTION 4</p>
+              <h2 id="biology-title">Biology</h2>
+              <p>Choose a biology chapter to practice.</p>
+            </div>
+            <div class="topic-grid" id="biology-topics"></div>
+          </section>
+
+          <section class="topic-section" aria-labelledby="environmental-science-title">
+            <div class="topic-section-heading">
+              <p class="eyebrow">SECTION 5</p>
+              <h2 id="environmental-science-title">Environmental Science</h2>
+              <p>Explore environmental science topics.</p>
+            </div>
+            <div class="topic-grid" id="environmental-science-topics"></div>
+          </section>
+
+          <section class="topic-section" aria-labelledby="nso-achievers-title">
+            <div class="topic-section-heading">
+              <p class="eyebrow">SECTION 6</p>
+              <h2 id="nso-achievers-title">Achievers Section</h2>
+              <p>Challenge yourself with higher-level questions.</p>
+            </div>
+            <div class="topic-grid" id="nso-achievers-topics"></div>
+          </section>
+        </div>
+
+        <section class="selected-topic" id="selected-topic" aria-live="polite" hidden>
+          <p class="eyebrow">YOUR SELECTION</p>
+          <h2 id="selected-topic-title"></h2>
+          <p id="selected-topic-description"></p>
+        </section>
+
+        <section class="content-card" id="other-learning-path" hidden>
+          <h2 id="other-path-title">Your learning path</h2>
+          <p>
+            The topic list for this Olympiad and class has not been added yet.
+            You can review your saved details in Profile.
+          </p>
+        </section>
+      </section>
+
+      <section class="view" id="progress-view" aria-labelledby="progress-title" hidden>
+        <p class="eyebrow">YOUR JOURNEY</p>
+        <h1 id="progress-title">Everyday progress</h1>
+        <p class="intro">A place to see your learning activity and celebrate the progress you make.</p>
+        <section class="content-card">
+          <h2>Your practice history</h2>
+          <p id="progress-summary">Your saved learning path is ready.</p>
+          <div class="progress-empty">
+            Topic practice tracking will appear here as lessons and quizzes are added to Apex.
+            Your account and learning choices are already saved on this computer.
+          </div>
+        </section>
+      </section>
+
+      <section class="view" id="updates-view" aria-labelledby="updates-title" hidden>
+        <p class="eyebrow">WHAT'S NEW</p>
+        <h1 id="updates-title">Updates</h1>
+        <p class="intro">A quick look at what is available in this local version of Apex.</p>
+        <article class="content-card">
+          <p class="eyebrow">YOUR LEARNING DASHBOARD</p>
+          <h2>Choose your next topic</h2>
+          <p>
+            Your dashboard shows topic sections for SOF IMO and SOF NSO learners.
+            The topic list is selected using your saved Olympiad and class.
+          </p>
+        </article>
+        <article class="content-card">
+          <p class="eyebrow">COMING NEXT</p>
+          <h2>Lessons and practice</h2>
+          <p>
+            Topic selection is ready. Interactive lessons, question sets, and
+            detailed practice history can be added as the next learning features.
+          </p>
+        </article>
+      </section>
+
+      <section class="view" id="profile-view" aria-labelledby="profile-title" hidden>
+        <p class="eyebrow">YOUR APEX ACCOUNT</p>
+        <h1 id="profile-title">My profile</h1>
+        <p class="intro" id="profile-welcome">Loading your saved profile…</p>
+        <dl class="profile-details">
+          <div class="profile-item"><dt>Name</dt><dd id="profile-name">—</dd></div>
+          <div class="profile-item"><dt>Email</dt><dd id="profile-email">—</dd></div>
+          <div class="profile-item"><dt>Age</dt><dd id="profile-age">—</dd></div>
+          <div class="profile-item"><dt>Learning goal</dt><dd id="profile-exam">—</dd></div>
+          <div class="profile-item"><dt>Olympiad</dt><dd id="profile-focus">—</dd></div>
+          <div class="profile-item"><dt>Class</dt><dd id="profile-class">—</dd></div>
+          <div class="profile-item"><dt>Preparation</dt><dd id="profile-preparation">—</dd></div>
+        </dl>
+        <div class="profile-actions">
+          <a class="action-link" id="edit-learning-path" href="/onboarding">Edit my learning path</a>
+        </div>
+        <p class="message" id="profile-message" role="status" aria-live="polite">
+          Your profile is saved locally on this computer.
+        </p>
+      </section>
+    </main>
+
+    <nav class="bottom-nav" aria-label="Main navigation">
+      <button class="nav-button" type="button" data-view="home" aria-current="page">
+        <span class="nav-icon" aria-hidden="true">⌂</span><span>Home</span>
+      </button>
+      <button class="nav-button" type="button" data-view="progress">
+        <span class="nav-icon" aria-hidden="true">◷</span><span class="nav-label">Everyday progress</span>
+      </button>
+      <button class="nav-button" type="button" data-view="updates">
+        <span class="nav-icon" aria-hidden="true">✦</span><span>Updates</span>
+      </button>
+      <button class="nav-button" type="button" data-view="profile">
+        <span class="nav-icon" aria-hidden="true">◉</span><span>Profile</span>
+      </button>
+    </nav>
+  </body>
+</html>

@@ -1,0 +1,287 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#123c2d">
+    <meta name="description" content="Choose the Olympiad you want to prepare for with Apex.">
+    <title>Choose your Olympiad | Apex</title>
+    <script src="/onboarding.js" defer></script>
+    <style>
+      :root {
+        color-scheme: light;
+        --ink: #17241f;
+        --muted: #748078;
+        --green: #237a52;
+        --green-dark: #195e3d;
+        --paper: #f6f8f2;
+        font-family: "DM Sans", "Segoe UI", sans-serif;
+        font-synthesis: none;
+        text-rendering: optimizeLegibility;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      * { box-sizing: border-box; }
+
+      body {
+        min-width: 320px;
+        min-height: 100vh;
+        margin: 0;
+        display: grid;
+        grid-template-rows: auto 1fr auto;
+        color: var(--ink);
+        background:
+          radial-gradient(ellipse at 12% 18%, rgba(80, 146, 97, .38), transparent 31rem),
+          radial-gradient(ellipse at 87% 90%, rgba(174, 193, 91, .16), transparent 28rem),
+          #123c2d;
+      }
+
+      button, select { font: inherit; }
+      button { cursor: pointer; }
+
+      .site-header {
+        width: min(100% - 40px, 1080px);
+        height: 76px;
+        margin: 0 auto;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .brand {
+        color: #f5fbf4;
+        font-size: 24px;
+        font-weight: 800;
+        letter-spacing: -1.5px;
+        text-decoration: none;
+      }
+
+      .brand-period { color: #c3ec9f; }
+
+      .logout-button {
+        padding: 8px 12px;
+        color: #d3e2d5;
+        border: 1px solid rgba(211, 226, 213, .35);
+        border-radius: 8px;
+        background: transparent;
+        font-size: 12px;
+        font-weight: 700;
+      }
+
+      main {
+        width: min(100% - 36px, 560px);
+        margin: 24px auto 50px;
+        align-self: center;
+      }
+
+      .card {
+        padding: clamp(24px, 6vw, 46px);
+        border: 1px solid rgba(47, 87, 57, .09);
+        border-radius: 20px;
+        background: var(--paper);
+        box-shadow: 0 24px 70px rgba(8, 29, 19, .2);
+      }
+
+      .eyebrow {
+        margin: 0 0 10px;
+        color: var(--green);
+        font-size: 10px;
+        font-weight: 800;
+        letter-spacing: 1.7px;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: clamp(28px, 7vw, 38px);
+        letter-spacing: -1.5px;
+      }
+
+      .intro {
+        margin: 12px 0 28px;
+        color: var(--muted);
+        font-size: 14px;
+        line-height: 1.65;
+      }
+
+      .welcome {
+        margin: 0 0 18px;
+        color: #3d4c42;
+        font-size: 13px;
+        font-weight: 700;
+      }
+
+      .question {
+        margin-top: 20px;
+      }
+
+      label {
+        display: block;
+        margin-bottom: 7px;
+        color: #3d4c42;
+        font-size: 12px;
+        font-weight: 700;
+      }
+
+      select {
+        width: 100%;
+        min-height: 48px;
+        padding: 0 13px;
+        color: var(--ink);
+        border: 1px solid #dfe5dc;
+        border-radius: 9px;
+        outline: none;
+        background: #fff;
+        font-size: 13px;
+      }
+
+      select:focus {
+        border-color: #75ad87;
+        box-shadow: 0 0 0 3px rgba(89, 155, 108, .14);
+      }
+
+      .hint {
+        margin: 8px 0 20px;
+        color: var(--muted);
+        font-size: 11px;
+        line-height: 1.55;
+      }
+
+      .primary-button {
+        width: 100%;
+        min-height: 47px;
+        padding: 0 16px;
+        color: #fff;
+        border: 0;
+        border-radius: 10px;
+        background: var(--green);
+        box-shadow: 0 4px 0 var(--green-dark);
+        font-size: 13px;
+        font-weight: 700;
+      }
+
+      .primary-button:hover { background: #2b895e; }
+      .primary-button:disabled { cursor: wait; opacity: .7; }
+
+      .secondary-button {
+        width: 100%;
+        min-height: 42px;
+        margin-top: 12px;
+        color: var(--green-dark);
+        border: 1px solid #dfe5dc;
+        border-radius: 10px;
+        background: transparent;
+        font-size: 12px;
+        font-weight: 700;
+      }
+
+      .message {
+        margin: 15px 0 0;
+        padding: 11px 12px;
+        color: #245c39;
+        border: 1px solid #cce4d1;
+        border-radius: 9px;
+        background: #f0f8f1;
+        font-size: 12px;
+        line-height: 1.55;
+      }
+
+      .message.is-error {
+        color: #963c35;
+        border-color: #efcfcb;
+        background: #fff5f3;
+      }
+
+      footer {
+        min-height: 48px;
+        display: grid;
+        place-items: center;
+        color: #afc5b3;
+        font-size: 9px;
+        font-weight: 700;
+        letter-spacing: 1.8px;
+      }
+
+      [hidden] { display: none !important; }
+    </style>
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="/" aria-label="Apex home">apex<span class="brand-period">.</span></a>
+      <button class="logout-button" id="logout-button" type="button">Log out</button>
+    </header>
+
+    <main>
+      <section class="card" aria-labelledby="page-title">
+        <p class="eyebrow">YOUR LEARNING PATH</p>
+        <h1 id="page-title">Personalize your preparation</h1>
+        <p class="intro">
+          Choose your Olympiad and preparation level first, then tell us your
+          class. Apex saves these details in your profile for next time.
+        </p>
+        <p class="welcome" id="welcome-message">Loading your account…</p>
+        <form id="focus-form">
+          <div id="learning-step">
+            <label for="exam-focus">Which Olympiad are you preparing for?</label>
+            <select id="exam-focus" name="exam_focus" required disabled>
+              <option value="" selected disabled>Choose an Olympiad</option>
+            </select>
+            <p class="hint" id="focus-hint">
+              Choose “Other / not sure yet” if you are still exploring.
+            </p>
+            <div class="question">
+              <label for="preparation-level">
+                How would you describe your current preparation?
+              </label>
+              <select id="preparation-level" name="preparation_level" required disabled>
+                <option value="" selected disabled>Select your preparation level</option>
+                <option value="beginner">I’m just getting started</option>
+                <option value="some-preparation">I’ve completed some initial preparation</option>
+                <option value="well-prepared">I’m well prepared and looking to strengthen my skills</option>
+                <option value="focused-revision">I have substantial experience and am looking for focused revision</option>
+              </select>
+              <p class="hint">
+                Choose the option that best reflects your current level. You can
+                update it as you progress.
+              </p>
+            </div>
+            <button class="primary-button" id="next-step-button" type="button" disabled>
+              Continue to class
+            </button>
+          </div>
+
+          <div class="question" id="class-step" hidden>
+            <label for="school-class">Which class are you in?</label>
+            <select id="school-class" name="school_class" required disabled>
+              <option value="" selected disabled>Choose your class</option>
+              <option value="1">Class 1</option>
+              <option value="2">Class 2</option>
+              <option value="3">Class 3</option>
+              <option value="4">Class 4</option>
+              <option value="5">Class 5</option>
+              <option value="6">Class 6</option>
+              <option value="7">Class 7</option>
+              <option value="8">Class 8</option>
+              <option value="9">Class 9</option>
+              <option value="10">Class 10</option>
+              <option value="11">Class 11</option>
+              <option value="12">Class 12</option>
+            </select>
+            <p class="hint">
+              We’ll save this with your profile so you don’t have to enter it
+              again next time.
+            </p>
+            <button class="primary-button" id="save-button" type="submit" disabled>
+              Save my profile
+            </button>
+            <button class="secondary-button" id="back-step-button" type="button">
+              Back to learning choices
+            </button>
+          </div>
+        </form>
+        <p class="message" id="form-message" role="status" aria-live="polite" hidden></p>
+      </section>
+    </main>
+
+    <footer>APEX · LEARN BRAVELY</footer>
+  </body>
+</html>
