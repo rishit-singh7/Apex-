@@ -131,6 +131,47 @@
         gap: 11px;
       }
 
+      .quiz-entry-card {
+        align-items: center;
+        background: linear-gradient(115deg, #f2f8f3, #fbfcf8);
+        border: 1px solid #cbdccf;
+        border-radius: 18px;
+        color: inherit;
+        display: flex;
+        gap: 16px;
+        margin: 24px 0 30px;
+        padding: 18px 20px;
+        text-decoration: none;
+        transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+      }
+      .quiz-entry-card:hover, .quiz-entry-card:focus-visible {
+        border-color: #4d805c;
+        box-shadow: 0 10px 26px rgb(30 70 42 / 9%);
+        outline: none;
+        transform: translateY(-1px);
+      }
+      .quiz-entry-icon {
+        align-items: center;
+        background: #dcebe0;
+        border-radius: 13px;
+        color: #285c39;
+        display: flex;
+        flex: 0 0 44px;
+        font-size: 22px;
+        height: 44px;
+        justify-content: center;
+      }
+      .quiz-entry-copy { display: grid; gap: 4px; }
+      .quiz-entry-copy strong { color: #244831; font-size: 1.04rem; }
+      .quiz-entry-copy span { color: #58685c; font-size: .9rem; line-height: 1.45; }
+      .quiz-entry-action {
+        color: #285c39;
+        font-size: .92rem;
+        font-weight: 700;
+        margin-left: auto;
+        white-space: nowrap;
+      }
+
       .topic-card {
         min-height: 105px;
         padding: 15px;
@@ -397,6 +438,8 @@
         .breadcrumb { font-size: 9px; }
         main { padding-top: 23px; }
         .topic-grid { grid-template-columns: 1fr; }
+        .quiz-entry-card { align-items: flex-start; flex-wrap: wrap; gap: 12px; }
+        .quiz-entry-action { margin-left: 56px; }
         .lesson-pagination { align-items: stretch; }
         .step-button { max-width: 48%; }
         .bottom-nav { min-height: 64px; }
@@ -440,6 +483,14 @@
           and 40% previous-class syllabus; review topics are labelled
           accordingly (<a href="https://sofworld.org/imo/class-10/imo-syllabus/imo-syllabus-class-10" target="_blank" rel="noopener noreferrer">SOF syllabus</a>).
         </div>
+        <a class="quiz-entry-card" href="/real-numbers/quiz">
+          <span class="quiz-entry-icon" aria-hidden="true">✦</span>
+          <span class="quiz-entry-copy">
+            <strong>Chapter quiz</strong>
+          <span>10 questions · Course concepts and Olympiad reasoning · 20 minutes</span>
+          </span>
+          <span class="quiz-entry-action">Start quiz <span aria-hidden="true">→</span></span>
+        </a>
         <div class="topic-grid" id="real-number-topic-list" aria-label="Real Numbers topics"></div>
         <aside class="source-note">
           <strong>Scope references:</strong>

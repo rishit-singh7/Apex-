@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#f7f8f4">
+    <title>Quadratic Equations Quiz | Apex</title>
+    <link rel="stylesheet" href="/quadratic-equations-quiz.css">
+    <script src="/quadratic-equations-quiz.js" defer></script>
+  </head>
+  <body>
+    <header class="quiz-header">
+      <a class="brand" href="/profile" aria-label="Apex home">apex<span>.</span></a>
+      <nav class="breadcrumbs" aria-label="Breadcrumb">
+        <a href="/quadratic-equations">Quadratic Equations</a><span aria-hidden="true">/</span><span>Chapter quiz</span>
+      </nav>
+      <a class="exit-link" href="/quadratic-equations">Exit quiz</a>
+    </header>
+
+    <main class="page-shell">
+      <section id="loading-view" class="loading-card" aria-live="polite">
+        <span class="spinner" aria-hidden="true"></span>
+        <p>Preparing your quiz…</p>
+      </section>
+
+      <section id="intro-view" class="intro-card" hidden>
+        <p class="eyebrow">CLASS 10 MATHEMATICS · QUADRATIC EQUATIONS</p>
+        <h1>Show what you know.</h1>
+        <p class="intro-copy">Ten questions: five course-based concepts and five Olympiad-level challenges. Take your time to think through each one.</p>
+        <div class="quiz-facts" aria-label="Quiz details">
+          <div><strong>10</strong><span>questions</span></div>
+          <div><strong>20 min</strong><span>overall time</span></div>
+          <div><strong>2 min</strong><span>per question</span></div>
+        </div>
+        <div class="intro-note">
+          <span class="note-icon" aria-hidden="true">i</span>
+            <p>Each question has its own timer. You can move between questions and change an answer while its timer is active. When you submit, you’ll see your score and explanations for all 10 questions.</p>
+        </div>
+        <button id="start-button" class="primary-button" type="button">Begin quiz <span aria-hidden="true">→</span></button>
+        <p id="intro-error" class="error-message" role="alert" hidden></p>
+        <section class="attempt-history" aria-labelledby="history-title">
+          <h2 id="history-title">Previous attempts</h2>
+          <p id="history-empty">Your submitted Quadratic Equations quizzes will appear here.</p>
+          <ol id="attempt-history-list"></ol>
+        </section>
+      </section>
+
+      <section id="quiz-view" hidden aria-labelledby="quiz-title">
+        <div class="quiz-heading">
+          <div>
+            <p class="eyebrow">CHAPTER QUIZ</p>
+            <h1 id="quiz-title">Quadratic Equations</h1>
+          </div>
+          <div class="overall-timer" aria-live="polite">
+            <span class="timer-caption">Time remaining</span>
+            <strong id="overall-timer">20:00</strong>
+          </div>
+        </div>
+
+        <div class="quiz-layout">
+          <section class="question-card" aria-label="Current question">
+            <div class="question-meta">
+              <span id="question-count">Question 1 of 10</span>
+              <span id="question-category" class="category-pill">Course concepts</span>
+            </div>
+            <div class="progress-track" role="progressbar" aria-label="Quiz progress" aria-valuemin="1" aria-valuemax="10" aria-valuenow="1">
+              <span id="progress-fill"></span>
+            </div>
+            <div class="question-timer-row">
+              <span>Time for this question</span>
+              <strong id="question-timer">2:00</strong>
+            </div>
+            <h2 id="question-prompt"></h2>
+            <div id="answer-options" class="answer-options" role="group" aria-label="Answer options"></div>
+            <p id="question-status" class="question-status" aria-live="polite"></p>
+            <div class="question-controls">
+              <button id="previous-button" class="secondary-button" type="button">← Previous</button>
+              <button id="next-button" class="primary-button" type="button">Next question →</button>
+            </div>
+          </section>
+
+          <aside class="navigator-card" aria-label="Question navigator">
+            <div class="navigator-heading">
+              <div><h2>Questions</h2><p>Choose a number to jump</p></div>
+              <span id="answered-count" class="answered-count">0 / 10</span>
+            </div>
+            <div id="question-navigator" class="question-navigator"></div>
+            <div class="legend"><span><i class="legend-current"></i>Current</span><span><i class="legend-answered"></i>Answered</span></div>
+            <button id="submit-open-button" class="submit-button" type="button">Review &amp; submit quiz</button>
+            <p class="submit-hint">You can review unanswered questions before submitting.</p>
+          </aside>
+        </div>
+        <p id="quiz-error" class="error-message" role="alert" hidden></p>
+      </section>
+
+      <section id="results-view" class="results-view" hidden aria-labelledby="results-title">
+        <div class="results-hero">
+          <span class="results-mark" aria-hidden="true">✓</span>
+          <p class="eyebrow">QUIZ COMPLETE</p>
+          <h1 id="results-title">Your results</h1>
+          <p id="results-subtitle" class="intro-copy">Here’s how you did on Quadratic Equations.</p>
+          <div class="score-display"><strong id="score-value">0/10</strong><span id="accuracy-value">0% accuracy</span></div>
+        </div>
+        <div class="result-stats" aria-label="Quiz results summary">
+          <div><span class="stat-dot correct-dot"></span><strong id="correct-value">0</strong><span>Correct</span></div>
+          <div><span class="stat-dot incorrect-dot"></span><strong id="incorrect-value">0</strong><span>Incorrect</span></div>
+          <div><span class="stat-dot unanswered-dot"></span><strong id="unanswered-value">0</strong><span>Unanswered</span></div>
+          <div><span class="stat-dot time-dot"></span><strong id="time-value">—</strong><span>Time taken</span></div>
+        </div>
+        <figure class="results-chart-card" aria-labelledby="results-chart-title">
+          <figcaption>
+            <div><p class="eyebrow">YOUR ATTEMPT</p><h2 id="results-chart-title">Results at a glance</h2></div>
+            <p class="chart-note">Bars show each result as a share of the 10 questions or 20-minute limit.</p>
+          </figcaption>
+          <div id="results-chart" class="results-chart" role="list" aria-label="Correct, incorrect, unanswered, and time taken"></div>
+        </figure>
+        <div class="review-heading"><div><p class="eyebrow">LEARN FROM EVERY QUESTION</p><h2>Answer review</h2></div><p>Open any question to see all options and the solution.</p></div>
+        <div id="answer-review" class="answer-review"></div>
+        <div class="results-actions"><a class="secondary-button link-button" href="/quadratic-equations">Back to learning</a><button id="history-button" class="secondary-button" type="button">Previous attempts</button><button id="retry-button" class="primary-button" type="button">Try another attempt <span aria-hidden="true">→</span></button></div>
+        <p id="results-error" class="error-message" role="alert" hidden></p>
+      </section>
+    </main>
+
+    <dialog id="submit-dialog" class="confirm-dialog" aria-labelledby="confirm-title">
+      <div class="dialog-mark" aria-hidden="true">?</div>
+      <h2 id="confirm-title">Submit your quiz?</h2>
+      <p id="confirm-copy">After submission, you’ll see your score and explanations for every question. You can’t change your answers afterward.</p>
+      <div class="dialog-actions"><button id="cancel-submit" class="secondary-button" type="button">Keep reviewing</button><button id="confirm-submit" class="primary-button" type="button">Submit quiz</button></div>
+    </dialog>
+    <div id="live-message" class="sr-only" aria-live="polite"></div>
+  </body>
+</html>
+

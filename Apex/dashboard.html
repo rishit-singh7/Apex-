@@ -253,6 +253,46 @@
         line-height: 1.6;
       }
 
+      .quiz-progress-summary {
+        margin: 16px 0;
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+      }
+      .quiz-progress-stat, .quiz-progress-card {
+        padding: 16px;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: #fbfcf9;
+      }
+      .quiz-progress-stat span, .quiz-progress-card span {
+        display: block;
+        color: var(--muted);
+        font-size: 11px;
+      }
+      .quiz-progress-stat strong {
+        display: block;
+        margin-top: 4px;
+        font-size: 24px;
+      }
+      .quiz-progress-list {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+        gap: 10px;
+      }
+      .quiz-progress-chart-card { margin: 0 0 16px; padding: 16px; border: 1px solid var(--line); border-radius: 12px; background: #fbfcf9; }
+      .quiz-progress-chart-card figcaption { margin-bottom: 12px; font-size: 12px; font-weight: 700; }
+      .quiz-progress-chart { display: grid; gap: 10px; }
+      .quiz-progress-chart-row { display: grid; grid-template-columns: minmax(105px, 180px) minmax(40px, 1fr) 48px; align-items: center; gap: 10px; }
+      .quiz-progress-chart-label { overflow: hidden; color: #53645a; font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
+      .quiz-progress-chart-track { height: 9px; overflow: hidden; border-radius: 99px; background: #e8eee8; }
+      .quiz-progress-chart-fill { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #68a97c, var(--green-dark)); }
+      .quiz-progress-chart-value { color: var(--ink); font-size: 11px; text-align: right; }
+      .quiz-progress-card h3 { margin: 0 0 12px; font-size: 15px; }
+      .quiz-progress-card p { margin: 6px 0 0; color: var(--muted); font-size: 12px; }
+      .quiz-progress-card a { color: var(--green-dark); font-size: 12px; font-weight: 700; }
+      @media (max-width: 480px) { .quiz-progress-summary { grid-template-columns: 1fr; } }
+
       .profile-details {
         margin: 20px 0 0;
         display: grid;
@@ -527,9 +567,17 @@
         <section class="content-card">
           <h2>Your practice history</h2>
           <p id="progress-summary">Your saved learning path is ready.</p>
-          <div class="progress-empty">
-            Topic practice tracking will appear here as lessons and quizzes are added to Apex.
-            Your account and learning choices are already saved on this computer.
+          <p id="quiz-progress-status" class="progress-empty" role="status" aria-live="polite">Loading your saved quiz attempts…</p>
+          <div id="quiz-progress-content" hidden>
+            <div class="quiz-progress-summary" aria-label="Quiz progress summary">
+              <div class="quiz-progress-stat"><span>Completed attempts</span><strong id="quiz-progress-attempts">0</strong></div>
+              <div class="quiz-progress-stat"><span>Average accuracy</span><strong id="quiz-progress-accuracy">—</strong></div>
+            </div>
+            <figure class="quiz-progress-chart-card" aria-labelledby="quiz-progress-chart-title">
+              <figcaption id="quiz-progress-chart-title">Latest accuracy by chapter</figcaption>
+              <div id="quiz-progress-chart" class="quiz-progress-chart" role="list" aria-label="Latest saved quiz accuracy by chapter"></div>
+            </figure>
+            <div id="quiz-progress-list" class="quiz-progress-list" aria-label="Progress by chapter"></div>
           </div>
         </section>
       </section>

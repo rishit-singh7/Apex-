@@ -225,9 +225,86 @@ async function loadProfile() {
   }
 }
 
+async function loadQuizProgress() {
+  const status = document.querySelector("#quiz-progress-status");
+  const content = document.querySelector("#quiz-progress-content");
+  const list = document.querySelector("#quiz-progress-list");
+  const chart = document.querySelector("#quiz-progress-chart");
+  status.hidden = false;
+  content.hidden = true;
+  status.textContent = "Loading your saved quiz attempts…";
+  try {
+    const response = await fetch("/api/quiz/progress");
+    if (response.status === 401) {
+      window.location.assign("/");
+      return;
+    }
+    if (!response.ok) {
+      throw new Error("Apex couldn't load your quiz progress. Please try again.");
+    }
+    const data = await response.json();
+    document.querySelector("#quiz-progress-attempts").textContent = String(data.totalAttempts);
+    document.querySelector("#quiz-progress-accuracy").textContent = data.averageAccuracy === null
+      ? "—"
+      : `${Number(data.averageAccuracy).toFixed(1)}%`;
+    list.replaceChildren();
+    chart.replaceChildren();
+    if (data.totalAttempts === 0) {
+      status.textContent = "No submitted quiz attempts yet. Your completed chapter quizzes will appear here.";
+      return;
+    }
+    data.quizzes.forEach((quiz) => {
+      const chartRow = document.createElement("div");
+      chartRow.className = "quiz-progress-chart-row";
+      chartRow.setAttribute("role", "listitem");
+      const chartLabel = document.createElement("span");
+      chartLabel.className = "quiz-progress-chart-label";
+      chartLabel.textContent = quiz.title;
+      const track = document.createElement("div");
+      track.className = "quiz-progress-chart-track";
+      track.setAttribute("aria-hidden", "true");
+      const fill = document.createElement("span");
+      fill.className = "quiz-progress-chart-fill";
+      const accuracy = Math.max(0, Math.min(100, Number(quiz.latestAccuracy) || 0));
+      fill.style.width = `${accuracy}%`;
+      track.append(fill);
+      const chartValue = document.createElement("strong");
+      chartValue.className = "quiz-progress-chart-value";
+      chartValue.textContent = `${accuracy.toFixed(1)}%`;
+      chartRow.setAttribute("aria-label", `${quiz.title}: ${accuracy.toFixed(1)}% latest accuracy`);
+      chartRow.append(chartLabel, track, chartValue);
+      chart.append(chartRow);
+
+      const card = document.createElement("article");
+      card.className = "quiz-progress-card";
+      const title = document.createElement("h3");
+      title.textContent = quiz.title;
+      const count = document.createElement("span");
+      count.textContent = `${quiz.attemptCount} ${quiz.attemptCount === 1 ? "attempt" : "attempts"}`;
+      const best = document.createElement("p");
+      best.textContent = `Best score: ${quiz.bestScore}/${quiz.bestTotalQuestions}`;
+      const latest = document.createElement("p");
+      latest.textContent = `Latest: ${quiz.latestScore}/${quiz.latestTotalQuestions} · ${Number(quiz.latestAccuracy).toFixed(1)}% accuracy`;
+      const link = document.createElement("a");
+      link.href = quiz.href;
+      link.textContent = "Open quiz and attempt history →";
+      card.append(title, count, best, latest, link);
+      list.append(card);
+    });
+    status.hidden = true;
+    content.hidden = false;
+  } catch (error) {
+    console.error("Could not load quiz progress.", error);
+    status.textContent = error.message || "Apex couldn't reach its backend. Please try again.";
+  }
+}
+
 navigationButtons.forEach((button) => {
   button.addEventListener("click", () => {
     showView(button.dataset.view);
+    if (button.dataset.view === "progress") {
+      loadQuizProgress();
+    }
     const url = new URL(window.location.href);
     if (button.dataset.view === "home") {
       url.searchParams.delete("tab");
@@ -275,3 +352,4 @@ if (requestedView && Object.hasOwn(views, requestedView)) {
   showView(requestedView);
 }
 loadProfile();
+loadQuizProgress();

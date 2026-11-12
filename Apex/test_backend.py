@@ -131,6 +131,9 @@ class AccountApiTests(unittest.TestCase):
         real_numbers_page = self.client.get("/real-numbers")
         real_numbers_script = self.client.get("/real-numbers.js")
         real_numbers_content = self.client.get("/real-numbers-content.js")
+        real_numbers_quiz_page = self.client.get("/real-numbers/quiz")
+        real_numbers_quiz_script = self.client.get("/real-numbers-quiz.js")
+        real_numbers_quiz_styles = self.client.get("/real-numbers-quiz.css")
         polynomials_page = self.client.get("/polynomials")
         polynomials_script = self.client.get("/polynomials.js")
         polynomials_content_script = self.client.get("/polynomials-content.js")
@@ -273,6 +276,13 @@ class AccountApiTests(unittest.TestCase):
         self.assertIn("validateTopics", real_numbers_script.text)
         self.assertIn("account.school_class !== 10", real_numbers_script.text)
         self.assertEqual(real_numbers_content.status_code, 200)
+        self.assertEqual(real_numbers_quiz_page.status_code, 200)
+        self.assertIn('href="/real-numbers-quiz.css"', real_numbers_quiz_page.text)
+        self.assertIn('src="/real-numbers-quiz.js"', real_numbers_quiz_page.text)
+        self.assertIn("Chapter quiz", real_numbers_page.text)
+        self.assertIn('href="/real-numbers/quiz"', real_numbers_page.text)
+        self.assertEqual(real_numbers_quiz_script.status_code, 200)
+        self.assertEqual(real_numbers_quiz_styles.status_code, 200)
         for topic in (
             "Number System Review",
             "Rational Numbers and Decimal Tests",

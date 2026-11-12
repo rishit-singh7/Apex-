@@ -31,6 +31,55 @@ def backend_is_ready() -> bool:
         return False
 
 
+def polynomials_quiz_is_ready() -> bool:
+    """Distinguish the current app from a healthy server running older code."""
+    try:
+        with urllib.request.urlopen(
+            f"{APP_URL}polynomials/quiz", timeout=2
+        ) as response:
+            page = response.read().decode("utf-8", errors="replace")
+            if response.status != 200 or "Polynomials Quiz | Apex" not in page:
+                return False
+        with urllib.request.urlopen(
+            f"{APP_URL}polynomials-quiz.js", timeout=2
+        ) as response:
+            return response.status == 200 and b"/api/quiz/polynomials/attempts" in response.read()
+    except (OSError, urllib.error.URLError):
+        return False
+
+
+def stop_managed_server() -> bool:
+    """Stop only the server verified by Apex's own PID and command checks."""
+    if not PID_PATH.is_file():
+        return False
+    if os.name != "nt":
+        return False
+    stop_script = PROJECT_DIR / "stop_apex.ps1"
+    try:
+        result = subprocess.run(
+            [
+                "powershell.exe",
+                "-NoProfile",
+                "-ExecutionPolicy",
+                "Bypass",
+                "-File",
+                str(stop_script),
+            ],
+            capture_output=True,
+            text=True,
+            timeout=20,
+            check=False,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return False
+    if result.returncode == 0:
+        return True
+    details = result.stderr.strip() or result.stdout.strip()
+    if details:
+        print(details)
+    return False
+
+
 def start_backend() -> subprocess.Popen[bytes]:
     creation_flags = 0
     process_options: dict[str, object] = {}
@@ -85,9 +134,17 @@ def recent_server_log() -> str:
 
 def main() -> int:
     if backend_is_ready():
-        print("Apex is already running.")
-        webbrowser.open(APP_URL)
-        return 0
+        if polynomials_quiz_is_ready():
+            print("Apex is already running.")
+            webbrowser.open(APP_URL)
+            return 0
+        print("Apex is running older code. Updating its local server...")
+        if not stop_managed_server():
+            print(
+                "Apex could not safely restart the older server. Run stop_apex.bat, "
+                "then start_apex.bat again."
+            )
+            return 1
 
     if not PYTHON_PATH.is_file():
         print("Apex's Python environment is missing.")

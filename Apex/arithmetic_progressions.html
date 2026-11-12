@@ -105,6 +105,30 @@
       }
       .source-note { border-color: var(--line); }
       .source-note a { color: var(--green-dark); }
+      .quiz-launch {
+        margin: 0 0 22px;
+        padding: 17px 19px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        border: 1px solid #cfe3d2;
+        border-radius: 14px;
+        background: linear-gradient(120deg, #f0f8f0, #fff);
+      }
+      .quiz-launch p { margin: 4px 0 0; color: var(--muted); font-size: 12px; }
+      .quiz-launch a {
+        flex: 0 0 auto;
+        padding: 10px 15px;
+        border-radius: 10px;
+        background: var(--green);
+        color: #fff;
+        font-size: 12px;
+        font-weight: 800;
+        text-decoration: none;
+      }
+      .quiz-launch a:focus-visible { outline: 3px solid #b8d6bd; outline-offset: 3px; }
+      @media (max-width: 560px) { .quiz-launch { align-items: flex-start; flex-direction: column; } }
       .topic-grid {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr));
@@ -347,6 +371,10 @@
           Graphs and extended Olympiad proofs in this chapter are labelled as
           enrichment, not additional prescribed CBSE requirements.
         </div>
+        <section class="quiz-launch" aria-label="Arithmetic Progressions chapter quiz">
+          <div><strong>Ready to check your understanding?</strong><p>10 questions · 5 course concepts · 5 Olympiad challenges · 20 minutes</p></div>
+          <a href="/arithmetic-progressions/quiz">Start chapter quiz <span aria-hidden="true">→</span></a>
+        </section>
         <div class="topic-grid" id="ap-topic-list" aria-label="Arithmetic Progressions topics"></div>
         <aside class="source-note">
           <strong>Official references checked:</strong>

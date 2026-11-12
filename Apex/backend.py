@@ -1,5 +1,6 @@
 import hashlib
 import hmac
+import json
 import os
 import re
 import secrets
@@ -13,6 +14,43 @@ from typing import Annotated, AsyncGenerator, Generator, Literal
 from fastapi import Depends, FastAPI, HTTPException, Request, Response, status
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, ConfigDict, Field, field_validator
+
+from real_numbers_quiz import (
+    QUESTIONS as LEGACY_REAL_NUMBERS_QUESTIONS,
+    QUIZ_ID as LEGACY_REAL_NUMBERS_QUIZ_ID,
+    OVERALL_TIMER_SECONDS as LEGACY_OVERALL_TIMER_SECONDS,
+    QUESTION_TIMER_SECONDS as LEGACY_QUESTION_TIMER_SECONDS,
+)
+from real_numbers_quiz_v2 import (
+    QUESTIONS as REAL_NUMBERS_QUESTIONS,
+    QUIZ_ID as REAL_NUMBERS_QUIZ_ID,
+    OVERALL_TIMER_SECONDS,
+    QUESTION_TIMER_SECONDS,
+)
+from polynomials_quiz_v1 import (
+    QUESTIONS as POLYNOMIALS_QUESTIONS,
+    QUIZ_ID as POLYNOMIALS_QUIZ_ID,
+    OVERALL_TIMER_SECONDS as POLYNOMIALS_OVERALL_TIMER_SECONDS,
+    QUESTION_TIMER_SECONDS as POLYNOMIALS_QUESTION_TIMER_SECONDS,
+)
+from linear_equations_quiz_v1 import (
+    QUESTIONS as LINEAR_EQUATIONS_QUESTIONS,
+    QUIZ_ID as LINEAR_EQUATIONS_QUIZ_ID,
+    OVERALL_TIMER_SECONDS as LINEAR_EQUATIONS_OVERALL_TIMER_SECONDS,
+    QUESTION_TIMER_SECONDS as LINEAR_EQUATIONS_QUESTION_TIMER_SECONDS,
+)
+from quadratic_equations_quiz_v1 import (
+    QUESTIONS as QUADRATIC_EQUATIONS_QUESTIONS,
+    QUIZ_ID as QUADRATIC_EQUATIONS_QUIZ_ID,
+    OVERALL_TIMER_SECONDS as QUADRATIC_EQUATIONS_OVERALL_TIMER_SECONDS,
+    QUESTION_TIMER_SECONDS as QUADRATIC_EQUATIONS_QUESTION_TIMER_SECONDS,
+)
+from arithmetic_progressions_quiz_v1 import (
+    QUESTIONS as ARITHMETIC_PROGRESSIONS_QUESTIONS,
+    QUIZ_ID as ARITHMETIC_PROGRESSIONS_QUIZ_ID,
+    OVERALL_TIMER_SECONDS as ARITHMETIC_PROGRESSIONS_OVERALL_TIMER_SECONDS,
+    QUESTION_TIMER_SECONDS as ARITHMETIC_PROGRESSIONS_QUESTION_TIMER_SECONDS,
+)
 
 
 PROJECT_DIR = Path(__file__).resolve().parent
@@ -108,6 +146,19 @@ class OlympiadFocusRequest(BaseModel):
     school_class: Annotated[int, Field(ge=1, le=12)]
 
 
+class QuizAnswerRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    question_index: Annotated[int, Field(ge=0, le=19)]
+    option: Literal["A", "B", "C", "D"]
+
+
+class QuizNavigationRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    question_index: Annotated[int, Field(ge=0, le=19)]
+
+
 class RateLimiter:
     def __init__(self) -> None:
         self._attempts: dict[tuple[str, str], list[float]] = {}
@@ -186,7 +237,61 @@ def initialize_database() -> None:
 
             CREATE INDEX IF NOT EXISTS sessions_expires_at_idx
                 ON sessions(expires_at);
+
+            CREATE TABLE IF NOT EXISTS quiz_attempts (
+                id INTEGER PRIMARY KEY,
+                account_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+                quiz_id TEXT NOT NULL,
+                started_at REAL NOT NULL,
+                overall_deadline_at REAL NOT NULL,
+                status TEXT NOT NULL CHECK (status IN ('in_progress', 'submitted')),
+                current_question INTEGER NOT NULL CHECK (current_question BETWEEN 0 AND 19),
+                question_states_json TEXT NOT NULL,
+                answers_json TEXT NOT NULL,
+                question_snapshot_json TEXT,
+                submitted_at REAL,
+                time_taken_seconds INTEGER,
+                correct_count INTEGER,
+                incorrect_count INTEGER,
+                unanswered_count INTEGER,
+                final_score INTEGER,
+                accuracy REAL,
+                xp_awarded INTEGER NOT NULL DEFAULT 0 CHECK (xp_awarded >= 0)
+            );
+
+            CREATE INDEX IF NOT EXISTS quiz_attempts_history_idx
+                ON quiz_attempts(account_id, quiz_id, started_at DESC);
+            CREATE TABLE IF NOT EXISTS xp_transactions (
+                id INTEGER PRIMARY KEY,
+                account_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+                attempt_id INTEGER NOT NULL UNIQUE REFERENCES quiz_attempts(id) ON DELETE CASCADE,
+                transaction_type TEXT NOT NULL CHECK (transaction_type = 'quiz_completion'),
+                amount INTEGER NOT NULL CHECK (amount > 0),
+                created_at REAL NOT NULL
+            );
             """
+        )
+        connection.execute("DROP INDEX IF EXISTS quiz_attempts_one_active_idx")
+        connection.execute(
+            """CREATE UNIQUE INDEX quiz_attempts_one_active_idx
+               ON quiz_attempts(account_id, quiz_id)
+               WHERE status = 'in_progress'"""
+        )
+        quiz_attempt_columns = {
+            row["name"] for row in connection.execute("PRAGMA table_info(quiz_attempts)")
+        }
+        if "question_snapshot_json" not in quiz_attempt_columns:
+            connection.execute(
+                "ALTER TABLE quiz_attempts ADD COLUMN question_snapshot_json TEXT"
+            )
+        legacy_snapshot = json.dumps(
+            LEGACY_REAL_NUMBERS_QUESTIONS,
+            ensure_ascii=False,
+        )
+        connection.execute(
+            """UPDATE quiz_attempts SET question_snapshot_json = ?
+               WHERE quiz_id = ? AND question_snapshot_json IS NULL""",
+            (legacy_snapshot, LEGACY_REAL_NUMBERS_QUIZ_ID),
         )
         account_columns = {
             row["name"] for row in connection.execute("PRAGMA table_info(accounts)")
@@ -387,6 +492,48 @@ def real_numbers_content_script() -> FileResponse:
     )
 
 
+@app.get("/real-numbers/quiz", include_in_schema=False)
+def real_numbers_quiz_page() -> FileResponse:
+    return FileResponse(
+        PROJECT_DIR / "real_numbers_quiz.html",
+        media_type="text/html",
+        headers={"Cache-Control": "no-cache"},
+    )
+
+
+@app.get("/real-numbers-quiz.css", include_in_schema=False)
+def real_numbers_quiz_styles() -> FileResponse:
+    return FileResponse(
+        PROJECT_DIR / "real_numbers_quiz.css",
+        media_type="text/css",
+        headers={"Cache-Control": "no-cache"},
+    )
+
+
+@app.get("/real-numbers-quiz.js", include_in_schema=False)
+def real_numbers_quiz_script() -> FileResponse:
+    return FileResponse(
+        PROJECT_DIR / "real_numbers_quiz.js",
+        media_type="text/javascript",
+        headers={"Cache-Control": "no-cache"},
+    )
+
+
+@app.get("/polynomials/quiz", include_in_schema=False)
+def polynomials_quiz_page() -> FileResponse:
+    return FileResponse(PROJECT_DIR / "polynomials_quiz.html", media_type="text/html", headers={"Cache-Control": "no-cache"})
+
+
+@app.get("/polynomials-quiz.css", include_in_schema=False)
+def polynomials_quiz_styles() -> FileResponse:
+    return FileResponse(PROJECT_DIR / "polynomials_quiz.css", media_type="text/css", headers={"Cache-Control": "no-cache"})
+
+
+@app.get("/polynomials-quiz.js", include_in_schema=False)
+def polynomials_quiz_script() -> FileResponse:
+    return FileResponse(PROJECT_DIR / "polynomials_quiz.js", media_type="text/javascript", headers={"Cache-Control": "no-cache"})
+
+
 @app.get("/polynomials", include_in_schema=False)
 def polynomials_page() -> FileResponse:
     return FileResponse(
@@ -441,6 +588,21 @@ def linear_equations_content_script() -> FileResponse:
     )
 
 
+@app.get("/linear-equations/quiz", include_in_schema=False)
+def linear_equations_quiz_page() -> FileResponse:
+    return FileResponse(PROJECT_DIR / "linear_equations_quiz.html", media_type="text/html", headers={"Cache-Control": "no-cache"})
+
+
+@app.get("/linear-equations-quiz.css", include_in_schema=False)
+def linear_equations_quiz_styles() -> FileResponse:
+    return FileResponse(PROJECT_DIR / "linear_equations_quiz.css", media_type="text/css", headers={"Cache-Control": "no-cache"})
+
+
+@app.get("/linear-equations-quiz.js", include_in_schema=False)
+def linear_equations_quiz_script() -> FileResponse:
+    return FileResponse(PROJECT_DIR / "linear_equations_quiz.js", media_type="text/javascript", headers={"Cache-Control": "no-cache"})
+
+
 @app.get("/quadratic-equations", include_in_schema=False)
 def quadratic_equations_page() -> FileResponse:
     return FileResponse(
@@ -466,6 +628,21 @@ def quadratic_equations_content_script() -> FileResponse:
         media_type="text/javascript",
         headers={"Cache-Control": "no-cache"},
     )
+
+
+@app.get("/quadratic-equations/quiz", include_in_schema=False)
+def quadratic_equations_quiz_page() -> FileResponse:
+    return FileResponse(PROJECT_DIR / "quadratic_equations_quiz.html", media_type="text/html", headers={"Cache-Control": "no-cache"})
+
+
+@app.get("/quadratic-equations-quiz.css", include_in_schema=False)
+def quadratic_equations_quiz_styles() -> FileResponse:
+    return FileResponse(PROJECT_DIR / "quadratic_equations_quiz.css", media_type="text/css", headers={"Cache-Control": "no-cache"})
+
+
+@app.get("/quadratic-equations-quiz.js", include_in_schema=False)
+def quadratic_equations_quiz_script() -> FileResponse:
+    return FileResponse(PROJECT_DIR / "quadratic_equations_quiz.js", media_type="text/javascript", headers={"Cache-Control": "no-cache"})
 
 
 @app.get("/arithmetic-progressions", include_in_schema=False)
@@ -495,9 +672,1179 @@ def arithmetic_progressions_content_script() -> FileResponse:
     )
 
 
+@app.get("/arithmetic-progressions/quiz", include_in_schema=False)
+def arithmetic_progressions_quiz_page() -> FileResponse:
+    return FileResponse(PROJECT_DIR / "arithmetic_progressions_quiz.html", media_type="text/html", headers={"Cache-Control": "no-cache"})
+
+
+@app.get("/arithmetic-progressions-quiz.css", include_in_schema=False)
+def arithmetic_progressions_quiz_styles() -> FileResponse:
+    return FileResponse(PROJECT_DIR / "arithmetic_progressions_quiz.css", media_type="text/css", headers={"Cache-Control": "no-cache"})
+
+
+@app.get("/arithmetic-progressions-quiz.js", include_in_schema=False)
+def arithmetic_progressions_quiz_script() -> FileResponse:
+    return FileResponse(PROJECT_DIR / "arithmetic_progressions_quiz.js", media_type="text/javascript", headers={"Cache-Control": "no-cache"})
+
+
 @app.get("/api/health")
 def health() -> dict[str, str]:
     return {"status": "ok"}
+
+
+def quiz_now() -> float:
+    """Clock boundary kept separate so timer behavior can be tested deterministically."""
+    return time.time()
+
+
+def require_real_numbers_eligibility(account: CurrentAccount) -> None:
+    if (
+        account.get("exam") != "Math Olympiad"
+        or account.get("exam_focus") != "SOF IMO"
+        or account.get("school_class") != 10
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="The Real Numbers quiz is currently available to Class 10 SOF IMO learners.",
+        )
+
+
+def require_polynomials_eligibility(account: CurrentAccount) -> None:
+    if (
+        account.get("exam") != "Math Olympiad"
+        or account.get("exam_focus") != "SOF IMO"
+        or account.get("school_class") != 10
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="The Polynomials quiz is currently available to Class 10 SOF IMO learners.",
+        )
+
+
+def require_linear_equations_eligibility(account: CurrentAccount) -> None:
+    if (
+        account.get("exam") != "Math Olympiad"
+        or account.get("exam_focus") != "SOF IMO"
+        or account.get("school_class") != 10
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="The Pair of Linear Equations quiz is currently available to Class 10 SOF IMO learners.",
+        )
+
+
+def require_quadratic_equations_eligibility(account: CurrentAccount) -> None:
+    if (
+        account.get("exam") != "Math Olympiad"
+        or account.get("exam_focus") != "SOF IMO"
+        or account.get("school_class") != 10
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="The Quadratic Equations quiz is currently available to Class 10 SOF IMO learners.",
+        )
+
+
+def require_arithmetic_progressions_eligibility(account: CurrentAccount) -> None:
+    if (
+        account.get("exam") != "Math Olympiad"
+        or account.get("exam_focus") != "SOF IMO"
+        or account.get("school_class") != 10
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="The Arithmetic Progressions quiz is currently available to Class 10 SOF IMO learners.",
+        )
+
+
+def _load_quiz_attempt(
+    connection: sqlite3.Connection,
+    attempt_id: int,
+    account_id: int,
+) -> sqlite3.Row:
+    row = connection.execute(
+        """SELECT * FROM quiz_attempts
+           WHERE id = ? AND account_id = ? AND quiz_id IN (?, ?)""",
+        (attempt_id, account_id, REAL_NUMBERS_QUIZ_ID, LEGACY_REAL_NUMBERS_QUIZ_ID),
+    ).fetchone()
+    if row is None:
+        raise HTTPException(status_code=404, detail="Quiz attempt not found.")
+    return row
+
+
+def _load_polynomials_attempt(
+    connection: sqlite3.Connection,
+    attempt_id: int,
+    account_id: int,
+) -> sqlite3.Row:
+    row = connection.execute(
+        "SELECT * FROM quiz_attempts WHERE id = ? AND account_id = ? AND quiz_id = ?",
+        (attempt_id, account_id, POLYNOMIALS_QUIZ_ID),
+    ).fetchone()
+    if row is None:
+        raise HTTPException(status_code=404, detail="Quiz attempt not found.")
+    return row
+
+
+def _load_linear_equations_attempt(
+    connection: sqlite3.Connection,
+    attempt_id: int,
+    account_id: int,
+) -> sqlite3.Row:
+    row = connection.execute(
+        "SELECT * FROM quiz_attempts WHERE id = ? AND account_id = ? AND quiz_id = ?",
+        (attempt_id, account_id, LINEAR_EQUATIONS_QUIZ_ID),
+    ).fetchone()
+    if row is None:
+        raise HTTPException(status_code=404, detail="Quiz attempt not found.")
+    return row
+
+
+def _load_quadratic_equations_attempt(
+    connection: sqlite3.Connection,
+    attempt_id: int,
+    account_id: int,
+) -> sqlite3.Row:
+    row = connection.execute(
+        "SELECT * FROM quiz_attempts WHERE id = ? AND account_id = ? AND quiz_id = ?",
+        (attempt_id, account_id, QUADRATIC_EQUATIONS_QUIZ_ID),
+    ).fetchone()
+    if row is None:
+        raise HTTPException(status_code=404, detail="Quiz attempt not found.")
+    return row
+
+
+def _load_arithmetic_progressions_attempt(
+    connection: sqlite3.Connection,
+    attempt_id: int,
+    account_id: int,
+) -> sqlite3.Row:
+    row = connection.execute(
+        "SELECT * FROM quiz_attempts WHERE id = ? AND account_id = ? AND quiz_id = ?",
+        (attempt_id, account_id, ARITHMETIC_PROGRESSIONS_QUIZ_ID),
+    ).fetchone()
+    if row is None:
+        raise HTTPException(status_code=404, detail="Quiz attempt not found.")
+    return row
+
+
+def _reload_quiz_attempt(connection: sqlite3.Connection, row: sqlite3.Row) -> sqlite3.Row:
+    if row["quiz_id"] == POLYNOMIALS_QUIZ_ID:
+        return _load_polynomials_attempt(connection, row["id"], row["account_id"])
+    if row["quiz_id"] == LINEAR_EQUATIONS_QUIZ_ID:
+        return _load_linear_equations_attempt(connection, row["id"], row["account_id"])
+    if row["quiz_id"] == QUADRATIC_EQUATIONS_QUIZ_ID:
+        return _load_quadratic_equations_attempt(connection, row["id"], row["account_id"])
+    if row["quiz_id"] == ARITHMETIC_PROGRESSIONS_QUIZ_ID:
+        return _load_arithmetic_progressions_attempt(connection, row["id"], row["account_id"])
+    return _load_quiz_attempt(connection, row["id"], row["account_id"])
+
+
+def _attempt_questions(row: sqlite3.Row) -> tuple[dict[str, object], ...]:
+    snapshot = row["question_snapshot_json"]
+    if snapshot:
+        return tuple(json.loads(snapshot))
+    if row["quiz_id"] == LEGACY_REAL_NUMBERS_QUIZ_ID:
+        return LEGACY_REAL_NUMBERS_QUESTIONS
+    if row["quiz_id"] == LINEAR_EQUATIONS_QUIZ_ID:
+        return LINEAR_EQUATIONS_QUESTIONS
+    if row["quiz_id"] == QUADRATIC_EQUATIONS_QUIZ_ID:
+        return QUADRATIC_EQUATIONS_QUESTIONS
+    if row["quiz_id"] == ARITHMETIC_PROGRESSIONS_QUIZ_ID:
+        return ARITHMETIC_PROGRESSIONS_QUESTIONS
+    return REAL_NUMBERS_QUESTIONS
+
+
+def _attempt_timer_seconds(row: sqlite3.Row) -> tuple[int, int]:
+    if row["quiz_id"] == LEGACY_REAL_NUMBERS_QUIZ_ID:
+        return LEGACY_OVERALL_TIMER_SECONDS, LEGACY_QUESTION_TIMER_SECONDS
+    if row["quiz_id"] == POLYNOMIALS_QUIZ_ID:
+        return POLYNOMIALS_OVERALL_TIMER_SECONDS, POLYNOMIALS_QUESTION_TIMER_SECONDS
+    if row["quiz_id"] == LINEAR_EQUATIONS_QUIZ_ID:
+        return LINEAR_EQUATIONS_OVERALL_TIMER_SECONDS, LINEAR_EQUATIONS_QUESTION_TIMER_SECONDS
+    if row["quiz_id"] == QUADRATIC_EQUATIONS_QUIZ_ID:
+        return QUADRATIC_EQUATIONS_OVERALL_TIMER_SECONDS, QUADRATIC_EQUATIONS_QUESTION_TIMER_SECONDS
+    if row["quiz_id"] == ARITHMETIC_PROGRESSIONS_QUIZ_ID:
+        return ARITHMETIC_PROGRESSIONS_OVERALL_TIMER_SECONDS, ARITHMETIC_PROGRESSIONS_QUESTION_TIMER_SECONDS
+    return OVERALL_TIMER_SECONDS, QUESTION_TIMER_SECONDS
+
+
+def _public_attempt_question(
+    question: dict[str, object],
+    index: int,
+) -> dict[str, object]:
+    return {
+        "index": index,
+        "id": question["id"],
+        "category": question["category"],
+        "prompt": question["prompt"],
+        "options": question["options"],
+    }
+
+
+def _finish_quiz_attempt(
+    connection: sqlite3.Connection,
+    row: sqlite3.Row,
+    now: float,
+) -> sqlite3.Row:
+    if row["status"] == "submitted":
+        return row
+    questions = _attempt_questions(row)
+    answers = json.loads(row["answers_json"])
+    correct = sum(
+        1 for index, question in enumerate(questions)
+        if answers.get(str(index)) == question["correct"]
+    )
+    attempted = sum(1 for index in range(len(questions)) if str(index) in answers)
+    incorrect = attempted - correct
+    unanswered = len(questions) - attempted
+    xp_awarded = 10 + (2 * correct)
+    overall_seconds, _ = _attempt_timer_seconds(row)
+    time_taken = max(0, min(int(now - row["started_at"]), overall_seconds))
+    connection.execute(
+        """UPDATE quiz_attempts
+           SET status = 'submitted', submitted_at = ?, time_taken_seconds = ?,
+               correct_count = ?, incorrect_count = ?, unanswered_count = ?,
+               final_score = ?, accuracy = ?, xp_awarded = ?
+           WHERE id = ? AND account_id = ? AND status = 'in_progress'""",
+        (now, time_taken, correct, incorrect, unanswered, correct,
+          round(correct * 100 / len(questions), 2), xp_awarded,
+         row["id"], row["account_id"]),
+    )
+    connection.execute(
+        """INSERT OR IGNORE INTO xp_transactions
+           (account_id, attempt_id, transaction_type, amount, created_at)
+           VALUES (?, ?, 'quiz_completion', ?, ?)""",
+        (row["account_id"], row["id"], xp_awarded, now),
+    )
+    return _reload_quiz_attempt(connection, row)
+
+
+def _tick_quiz_attempt(
+    connection: sqlite3.Connection,
+    row: sqlite3.Row,
+    now: float,
+) -> sqlite3.Row:
+    if row["status"] == "submitted":
+        return row
+    if now >= row["overall_deadline_at"]:
+        return _finish_quiz_attempt(connection, row, row["overall_deadline_at"])
+
+    states = json.loads(row["question_states_json"])
+    current_state = states.get(str(row["current_question"]))
+    if current_state and current_state.get("active_since") is not None:
+        elapsed = max(0.0, now - current_state["active_since"])
+        remaining = max(0.0, current_state["remaining_seconds"] - elapsed)
+        if remaining <= 0:
+            current_state["remaining_seconds"] = 0
+            current_state["active_since"] = None
+            current_state["locked"] = True
+        else:
+            current_state["remaining_seconds"] = remaining
+            current_state["active_since"] = now
+        connection.execute(
+            "UPDATE quiz_attempts SET question_states_json = ? WHERE id = ?",
+            (json.dumps(states), row["id"]),
+        )
+    return _reload_quiz_attempt(connection, row)
+
+
+def _quiz_result_payload(row: sqlite3.Row) -> dict[str, object]:
+    if row["status"] != "submitted":
+        raise HTTPException(status_code=409, detail="Submit the quiz before viewing explanations.")
+    answers = json.loads(row["answers_json"])
+    questions = _attempt_questions(row)
+    review = []
+    for index, question in enumerate(questions):
+        selected = answers.get(str(index))
+        correct = selected == question["correct"] if selected else False
+        review.append({
+            "index": index,
+            "category": question["category"],
+            "prompt": question["prompt"],
+            "options": question["options"],
+            "selectedOption": selected,
+            "selectedLabel": question["options"].get(selected) if selected else None,
+            "correctOption": question["correct"],
+            "correctLabel": question["options"][question["correct"]],
+            "outcome": "unanswered" if selected is None else "correct" if correct else "incorrect",
+            "explanation": question["explanation"],
+        })
+    overall_seconds, _ = _attempt_timer_seconds(row)
+    return {
+        "attemptId": row["id"],
+        "status": "submitted",
+        "totalQuestions": len(questions),
+        "correct": row["correct_count"],
+        "incorrect": row["incorrect_count"],
+        "unanswered": row["unanswered_count"],
+        "score": row["final_score"],
+        "accuracy": row["accuracy"],
+        "timeTakenSeconds": row["time_taken_seconds"],
+        "overallTimeLimitSeconds": overall_seconds,
+        "questions": review,
+    }
+
+
+def _quiz_state_payload(row: sqlite3.Row, now: float) -> dict[str, object]:
+    if row["status"] == "submitted":
+        return _quiz_result_payload(row)
+    states = json.loads(row["question_states_json"])
+    questions = _attempt_questions(row)
+    _, question_timer_seconds = _attempt_timer_seconds(row)
+    current_index = row["current_question"]
+    current_state = states.get(str(current_index), {})
+    q_remaining = current_state.get("remaining_seconds", question_timer_seconds)
+    if current_state.get("active_since") is not None:
+        q_remaining = max(0, q_remaining - max(0, now - current_state["active_since"]))
+    state_list = []
+    answers = json.loads(row["answers_json"])
+    for index in range(len(questions)):
+        q_state = states.get(str(index), {})
+        state_list.append({
+            "index": index,
+            "visited": str(index) in states,
+            "answered": str(index) in answers,
+            "locked": bool(q_state.get("locked", False)),
+        })
+    return {
+        "attemptId": row["id"],
+        "status": "in_progress",
+        "questionCount": len(questions),
+        "currentQuestionIndex": current_index,
+        "question": _public_attempt_question(questions[current_index], current_index),
+        "selectedOption": answers.get(str(current_index)),
+        "questionRemainingSeconds": int(q_remaining + 0.999),
+        "overallRemainingSeconds": max(0, int(row["overall_deadline_at"] - now + 0.999)),
+        "questions": state_list,
+    }
+
+
+def _quiz_response(row: sqlite3.Row, now: float) -> dict[str, object]:
+    return _quiz_state_payload(row, now)
+
+
+@app.post("/api/quiz/real-numbers/attempts")
+def start_or_resume_real_numbers_quiz(account: CurrentAccount) -> dict[str, object]:
+    require_real_numbers_eligibility(account)
+    now = quiz_now()
+    with database() as connection:
+        active = connection.execute(
+            """SELECT * FROM quiz_attempts
+               WHERE account_id = ? AND quiz_id = ?
+                 AND status = 'in_progress' ORDER BY started_at LIMIT 1""",
+            (account["id"], REAL_NUMBERS_QUIZ_ID),
+        ).fetchone()
+        if active is not None:
+            active = _tick_quiz_attempt(connection, active, now)
+            return _quiz_response(active, now)
+
+        states = {"0": {
+            "remaining_seconds": QUESTION_TIMER_SECONDS,
+            "active_since": now,
+            "locked": False,
+        }}
+        try:
+            cursor = connection.execute(
+                """INSERT INTO quiz_attempts
+                   (account_id, quiz_id, started_at, overall_deadline_at, status,
+                    current_question, question_states_json, answers_json,
+                    question_snapshot_json)
+                   VALUES (?, ?, ?, ?, 'in_progress', 0, ?, '{}', ?)""",
+                (account["id"], REAL_NUMBERS_QUIZ_ID, now,
+                 now + OVERALL_TIMER_SECONDS, json.dumps(states),
+                 json.dumps(REAL_NUMBERS_QUESTIONS, ensure_ascii=False)),
+            )
+        except sqlite3.IntegrityError:
+            active = connection.execute(
+                """SELECT * FROM quiz_attempts
+                   WHERE account_id = ? AND quiz_id = ?
+                     AND status = 'in_progress' ORDER BY started_at LIMIT 1""",
+                (account["id"], REAL_NUMBERS_QUIZ_ID),
+            ).fetchone()
+            if active is None:
+                raise
+            active = _tick_quiz_attempt(connection, active, now)
+            return _quiz_response(active, now)
+        attempt = _load_quiz_attempt(connection, cursor.lastrowid, account["id"])
+        return _quiz_response(attempt, now)
+
+
+@app.get("/api/quiz/real-numbers/attempts/{attempt_id}")
+def get_real_numbers_quiz_state(
+    attempt_id: int,
+    account: CurrentAccount,
+) -> dict[str, object]:
+    now = quiz_now()
+    with database() as connection:
+        attempt = _load_quiz_attempt(connection, attempt_id, account["id"])
+        attempt = _tick_quiz_attempt(connection, attempt, now)
+        return _quiz_response(attempt, now)
+
+
+@app.post("/api/quiz/real-numbers/attempts/{attempt_id}/answer")
+def save_real_numbers_quiz_answer(
+    attempt_id: int,
+    payload: QuizAnswerRequest,
+    account: CurrentAccount,
+) -> dict[str, object]:
+    now = quiz_now()
+    with database() as connection:
+        attempt = _load_quiz_attempt(connection, attempt_id, account["id"])
+        attempt = _tick_quiz_attempt(connection, attempt, now)
+        if attempt["status"] != "in_progress":
+            return _quiz_result_payload(attempt)
+        if payload.question_index >= len(_attempt_questions(attempt)):
+            raise HTTPException(status_code=422, detail="That question is outside this quiz.")
+        if payload.question_index != attempt["current_question"]:
+            raise HTTPException(status_code=409, detail="Navigate to this question before answering it.")
+        states = json.loads(attempt["question_states_json"])
+        if states.get(str(payload.question_index), {}).get("locked"):
+            raise HTTPException(status_code=409, detail="This question's timer has expired.")
+        answers = json.loads(attempt["answers_json"])
+        answers[str(payload.question_index)] = payload.option
+        connection.execute(
+            "UPDATE quiz_attempts SET answers_json = ? WHERE id = ?",
+            (json.dumps(answers), attempt_id),
+        )
+        attempt = _load_quiz_attempt(connection, attempt_id, account["id"])
+        return _quiz_response(attempt, now)
+
+
+@app.post("/api/quiz/real-numbers/attempts/{attempt_id}/navigate")
+def navigate_real_numbers_quiz(
+    attempt_id: int,
+    payload: QuizNavigationRequest,
+    account: CurrentAccount,
+) -> dict[str, object]:
+    now = quiz_now()
+    with database() as connection:
+        attempt = _load_quiz_attempt(connection, attempt_id, account["id"])
+        attempt = _tick_quiz_attempt(connection, attempt, now)
+        if attempt["status"] != "in_progress":
+            return _quiz_result_payload(attempt)
+        questions = _attempt_questions(attempt)
+        if payload.question_index >= len(questions):
+            raise HTTPException(status_code=422, detail="That question is outside this quiz.")
+        _, question_timer_seconds = _attempt_timer_seconds(attempt)
+        states = json.loads(attempt["question_states_json"])
+        target_key = str(payload.question_index)
+        if target_key not in states:
+            states[target_key] = {
+                "remaining_seconds": question_timer_seconds,
+                "active_since": None,
+                "locked": False,
+            }
+        previous_state = states.get(str(attempt["current_question"]))
+        if previous_state is not None:
+            previous_state["active_since"] = None
+        target = states[target_key]
+        target["active_since"] = now if not target.get("locked") else None
+        connection.execute(
+            """UPDATE quiz_attempts SET current_question = ?, question_states_json = ?
+               WHERE id = ?""",
+            (payload.question_index, json.dumps(states), attempt_id),
+        )
+        attempt = _load_quiz_attempt(connection, attempt_id, account["id"])
+        return _quiz_response(attempt, now)
+
+
+@app.post("/api/quiz/real-numbers/attempts/{attempt_id}/submit")
+def submit_real_numbers_quiz(
+    attempt_id: int,
+    account: CurrentAccount,
+) -> dict[str, object]:
+    now = quiz_now()
+    with database() as connection:
+        attempt = _load_quiz_attempt(connection, attempt_id, account["id"])
+        attempt = _tick_quiz_attempt(connection, attempt, now)
+        if attempt["status"] == "in_progress":
+            attempt = _finish_quiz_attempt(connection, attempt, now)
+        return _quiz_result_payload(attempt)
+
+
+@app.get("/api/quiz/real-numbers/attempts/{attempt_id}/results")
+def get_real_numbers_quiz_results(
+    attempt_id: int,
+    account: CurrentAccount,
+) -> dict[str, object]:
+    now = quiz_now()
+    with database() as connection:
+        attempt = _load_quiz_attempt(connection, attempt_id, account["id"])
+        attempt = _tick_quiz_attempt(connection, attempt, now)
+        return _quiz_result_payload(attempt)
+
+
+@app.get("/api/quiz/real-numbers/history")
+def real_numbers_quiz_history(account: CurrentAccount) -> dict[str, object]:
+    with database() as connection:
+        rows = connection.execute(
+            """SELECT id, started_at, submitted_at, correct_count, incorrect_count,
+                      unanswered_count, final_score, accuracy, time_taken_seconds,
+                      quiz_id, question_snapshot_json
+               FROM quiz_attempts WHERE account_id = ? AND quiz_id IN (?, ?)
+                 AND status = 'submitted' ORDER BY started_at DESC""",
+            (account["id"], REAL_NUMBERS_QUIZ_ID, LEGACY_REAL_NUMBERS_QUIZ_ID),
+        ).fetchall()
+    attempts = []
+    for row in rows:
+        attempt = dict(row)
+        attempt["total_questions"] = len(_attempt_questions(row))
+        attempt.pop("quiz_id", None)
+        attempt.pop("question_snapshot_json", None)
+        attempts.append(attempt)
+    return {"attempts": attempts}
+
+
+@app.post("/api/quiz/polynomials/attempts")
+def start_or_resume_polynomials_quiz(account: CurrentAccount) -> dict[str, object]:
+    require_polynomials_eligibility(account)
+    now = quiz_now()
+    with database() as connection:
+        active = connection.execute(
+            "SELECT * FROM quiz_attempts WHERE account_id = ? AND quiz_id = ? AND status = 'in_progress' ORDER BY started_at LIMIT 1",
+            (account["id"], POLYNOMIALS_QUIZ_ID),
+        ).fetchone()
+        if active is not None:
+            active = _tick_quiz_attempt(connection, active, now)
+            return _quiz_response(active, now)
+        states = {"0": {"remaining_seconds": POLYNOMIALS_QUESTION_TIMER_SECONDS, "active_since": now, "locked": False}}
+        try:
+            cursor = connection.execute(
+                """INSERT INTO quiz_attempts
+                   (account_id, quiz_id, started_at, overall_deadline_at, status,
+                    current_question, question_states_json, answers_json, question_snapshot_json)
+                   VALUES (?, ?, ?, ?, 'in_progress', 0, ?, '{}', ?)""",
+                (account["id"], POLYNOMIALS_QUIZ_ID, now, now + POLYNOMIALS_OVERALL_TIMER_SECONDS,
+                 json.dumps(states), json.dumps(POLYNOMIALS_QUESTIONS, ensure_ascii=False)),
+            )
+        except sqlite3.IntegrityError:
+            active = connection.execute(
+                "SELECT * FROM quiz_attempts WHERE account_id = ? AND quiz_id = ? AND status = 'in_progress' ORDER BY started_at LIMIT 1",
+                (account["id"], POLYNOMIALS_QUIZ_ID),
+            ).fetchone()
+            if active is None:
+                raise
+            active = _tick_quiz_attempt(connection, active, now)
+            return _quiz_response(active, now)
+        attempt = _load_polynomials_attempt(connection, cursor.lastrowid, account["id"])
+        return _quiz_response(attempt, now)
+
+
+@app.get("/api/quiz/polynomials/attempts/{attempt_id}")
+def get_polynomials_quiz_state(attempt_id: int, account: CurrentAccount) -> dict[str, object]:
+    now = quiz_now()
+    with database() as connection:
+        attempt = _load_polynomials_attempt(connection, attempt_id, account["id"])
+        attempt = _tick_quiz_attempt(connection, attempt, now)
+        return _quiz_response(attempt, now)
+
+
+@app.post("/api/quiz/polynomials/attempts/{attempt_id}/answer")
+def save_polynomials_quiz_answer(
+    attempt_id: int, payload: QuizAnswerRequest, account: CurrentAccount,
+) -> dict[str, object]:
+    now = quiz_now()
+    with database() as connection:
+        attempt = _load_polynomials_attempt(connection, attempt_id, account["id"])
+        attempt = _tick_quiz_attempt(connection, attempt, now)
+        if attempt["status"] != "in_progress":
+            return _quiz_result_payload(attempt)
+        if payload.question_index >= len(_attempt_questions(attempt)):
+            raise HTTPException(status_code=422, detail="That question is outside this quiz.")
+        if payload.question_index != attempt["current_question"]:
+            raise HTTPException(status_code=409, detail="Navigate to this question before answering it.")
+        states = json.loads(attempt["question_states_json"])
+        if states.get(str(payload.question_index), {}).get("locked"):
+            raise HTTPException(status_code=409, detail="This question's timer has expired.")
+        answers = json.loads(attempt["answers_json"])
+        answers[str(payload.question_index)] = payload.option
+        connection.execute("UPDATE quiz_attempts SET answers_json = ? WHERE id = ?", (json.dumps(answers), attempt_id))
+        attempt = _load_polynomials_attempt(connection, attempt_id, account["id"])
+        return _quiz_response(attempt, now)
+
+
+@app.post("/api/quiz/polynomials/attempts/{attempt_id}/navigate")
+def navigate_polynomials_quiz(
+    attempt_id: int, payload: QuizNavigationRequest, account: CurrentAccount,
+) -> dict[str, object]:
+    now = quiz_now()
+    with database() as connection:
+        attempt = _load_polynomials_attempt(connection, attempt_id, account["id"])
+        attempt = _tick_quiz_attempt(connection, attempt, now)
+        if attempt["status"] != "in_progress":
+            return _quiz_result_payload(attempt)
+        questions = _attempt_questions(attempt)
+        if payload.question_index >= len(questions):
+            raise HTTPException(status_code=422, detail="That question is outside this quiz.")
+        states = json.loads(attempt["question_states_json"])
+        key = str(payload.question_index)
+        if key not in states:
+            states[key] = {"remaining_seconds": POLYNOMIALS_QUESTION_TIMER_SECONDS, "active_since": None, "locked": False}
+        previous = states.get(str(attempt["current_question"]))
+        if previous is not None:
+            previous["active_since"] = None
+        states[key]["active_since"] = now if not states[key].get("locked") else None
+        connection.execute(
+            "UPDATE quiz_attempts SET current_question = ?, question_states_json = ? WHERE id = ?",
+            (payload.question_index, json.dumps(states), attempt_id),
+        )
+        attempt = _load_polynomials_attempt(connection, attempt_id, account["id"])
+        return _quiz_response(attempt, now)
+
+
+@app.post("/api/quiz/polynomials/attempts/{attempt_id}/submit")
+def submit_polynomials_quiz(attempt_id: int, account: CurrentAccount) -> dict[str, object]:
+    now = quiz_now()
+    with database() as connection:
+        attempt = _load_polynomials_attempt(connection, attempt_id, account["id"])
+        attempt = _tick_quiz_attempt(connection, attempt, now)
+        if attempt["status"] == "in_progress":
+            attempt = _finish_quiz_attempt(connection, attempt, now)
+        return _quiz_result_payload(attempt)
+
+
+@app.get("/api/quiz/polynomials/attempts/{attempt_id}/results")
+def get_polynomials_quiz_results(attempt_id: int, account: CurrentAccount) -> dict[str, object]:
+    now = quiz_now()
+    with database() as connection:
+        attempt = _load_polynomials_attempt(connection, attempt_id, account["id"])
+        attempt = _tick_quiz_attempt(connection, attempt, now)
+        return _quiz_result_payload(attempt)
+
+
+@app.get("/api/quiz/polynomials/history")
+def polynomials_quiz_history(account: CurrentAccount) -> dict[str, object]:
+    with database() as connection:
+        rows = connection.execute(
+            """SELECT id, started_at, submitted_at, correct_count AS correct, correct_count, incorrect_count,
+                      unanswered_count, final_score, accuracy, time_taken_seconds
+               FROM quiz_attempts WHERE account_id = ? AND quiz_id = ? AND status = 'submitted'
+               ORDER BY started_at DESC""",
+            (account["id"], POLYNOMIALS_QUIZ_ID),
+        ).fetchall()
+    return {"attempts": [dict(row) for row in rows]}
+
+
+@app.post("/api/quiz/linear-equations/attempts")
+def start_or_resume_linear_equations_quiz(account: CurrentAccount) -> dict[str, object]:
+    require_linear_equations_eligibility(account)
+    now = quiz_now()
+    with database() as connection:
+        active = connection.execute(
+            """SELECT * FROM quiz_attempts
+               WHERE account_id = ? AND quiz_id = ? AND status = 'in_progress'
+               ORDER BY started_at LIMIT 1""",
+            (account["id"], LINEAR_EQUATIONS_QUIZ_ID),
+        ).fetchone()
+        if active is not None:
+            active = _tick_quiz_attempt(connection, active, now)
+            return _quiz_response(active, now)
+
+        states = {"0": {
+            "remaining_seconds": LINEAR_EQUATIONS_QUESTION_TIMER_SECONDS,
+            "active_since": now,
+            "locked": False,
+        }}
+        try:
+            cursor = connection.execute(
+                """INSERT INTO quiz_attempts
+                   (account_id, quiz_id, started_at, overall_deadline_at, status,
+                    current_question, question_states_json, answers_json,
+                    question_snapshot_json)
+                   VALUES (?, ?, ?, ?, 'in_progress', 0, ?, '{}', ?)""",
+                (account["id"], LINEAR_EQUATIONS_QUIZ_ID, now,
+                 now + LINEAR_EQUATIONS_OVERALL_TIMER_SECONDS, json.dumps(states),
+                 json.dumps(LINEAR_EQUATIONS_QUESTIONS, ensure_ascii=False)),
+            )
+        except sqlite3.IntegrityError:
+            active = connection.execute(
+                """SELECT * FROM quiz_attempts
+                   WHERE account_id = ? AND quiz_id = ? AND status = 'in_progress'
+                   ORDER BY started_at LIMIT 1""",
+                (account["id"], LINEAR_EQUATIONS_QUIZ_ID),
+            ).fetchone()
+            if active is None:
+                raise
+            active = _tick_quiz_attempt(connection, active, now)
+            return _quiz_response(active, now)
+        attempt = _load_linear_equations_attempt(connection, cursor.lastrowid, account["id"])
+        return _quiz_response(attempt, now)
+
+
+@app.get("/api/quiz/linear-equations/attempts/{attempt_id}")
+def get_linear_equations_quiz_state(
+    attempt_id: int,
+    account: CurrentAccount,
+) -> dict[str, object]:
+    now = quiz_now()
+    with database() as connection:
+        attempt = _load_linear_equations_attempt(connection, attempt_id, account["id"])
+        attempt = _tick_quiz_attempt(connection, attempt, now)
+        return _quiz_response(attempt, now)
+
+
+@app.post("/api/quiz/linear-equations/attempts/{attempt_id}/answer")
+def save_linear_equations_quiz_answer(
+    attempt_id: int,
+    payload: QuizAnswerRequest,
+    account: CurrentAccount,
+) -> dict[str, object]:
+    now = quiz_now()
+    with database() as connection:
+        attempt = _load_linear_equations_attempt(connection, attempt_id, account["id"])
+        attempt = _tick_quiz_attempt(connection, attempt, now)
+        if attempt["status"] != "in_progress":
+            return _quiz_result_payload(attempt)
+        if payload.question_index >= len(_attempt_questions(attempt)):
+            raise HTTPException(status_code=422, detail="That question is outside this quiz.")
+        if payload.question_index != attempt["current_question"]:
+            raise HTTPException(status_code=409, detail="Navigate to this question before answering it.")
+        states = json.loads(attempt["question_states_json"])
+        if states.get(str(payload.question_index), {}).get("locked"):
+            raise HTTPException(status_code=409, detail="This question's timer has expired.")
+        answers = json.loads(attempt["answers_json"])
+        answers[str(payload.question_index)] = payload.option
+        connection.execute(
+            "UPDATE quiz_attempts SET answers_json = ? WHERE id = ?",
+            (json.dumps(answers), attempt_id),
+        )
+        attempt = _load_linear_equations_attempt(connection, attempt_id, account["id"])
+        return _quiz_response(attempt, now)
+
+
+@app.post("/api/quiz/linear-equations/attempts/{attempt_id}/navigate")
+def navigate_linear_equations_quiz(
+    attempt_id: int,
+    payload: QuizNavigationRequest,
+    account: CurrentAccount,
+) -> dict[str, object]:
+    now = quiz_now()
+    with database() as connection:
+        attempt = _load_linear_equations_attempt(connection, attempt_id, account["id"])
+        attempt = _tick_quiz_attempt(connection, attempt, now)
+        if attempt["status"] != "in_progress":
+            return _quiz_result_payload(attempt)
+        questions = _attempt_questions(attempt)
+        if payload.question_index >= len(questions):
+            raise HTTPException(status_code=422, detail="That question is outside this quiz.")
+        states = json.loads(attempt["question_states_json"])
+        target_key = str(payload.question_index)
+        if target_key not in states:
+            states[target_key] = {
+                "remaining_seconds": LINEAR_EQUATIONS_QUESTION_TIMER_SECONDS,
+                "active_since": None,
+                "locked": False,
+            }
+        previous_state = states.get(str(attempt["current_question"]))
+        if previous_state is not None:
+            previous_state["active_since"] = None
+        target = states[target_key]
+        target["active_since"] = now if not target.get("locked") else None
+        connection.execute(
+            """UPDATE quiz_attempts SET current_question = ?, question_states_json = ?
+               WHERE id = ?""",
+            (payload.question_index, json.dumps(states), attempt_id),
+        )
+        attempt = _load_linear_equations_attempt(connection, attempt_id, account["id"])
+        return _quiz_response(attempt, now)
+
+
+@app.post("/api/quiz/linear-equations/attempts/{attempt_id}/submit")
+def submit_linear_equations_quiz(
+    attempt_id: int,
+    account: CurrentAccount,
+) -> dict[str, object]:
+    now = quiz_now()
+    with database() as connection:
+        attempt = _load_linear_equations_attempt(connection, attempt_id, account["id"])
+        attempt = _tick_quiz_attempt(connection, attempt, now)
+        if attempt["status"] == "in_progress":
+            attempt = _finish_quiz_attempt(connection, attempt, now)
+        return _quiz_result_payload(attempt)
+
+
+@app.get("/api/quiz/linear-equations/attempts/{attempt_id}/results")
+def get_linear_equations_quiz_results(
+    attempt_id: int,
+    account: CurrentAccount,
+) -> dict[str, object]:
+    now = quiz_now()
+    with database() as connection:
+        attempt = _load_linear_equations_attempt(connection, attempt_id, account["id"])
+        attempt = _tick_quiz_attempt(connection, attempt, now)
+        return _quiz_result_payload(attempt)
+
+
+@app.get("/api/quiz/linear-equations/history")
+def linear_equations_quiz_history(account: CurrentAccount) -> dict[str, object]:
+    with database() as connection:
+        rows = connection.execute(
+            """SELECT id, started_at, submitted_at, correct_count AS correct, correct_count, incorrect_count,
+                      unanswered_count, final_score, accuracy, time_taken_seconds
+               FROM quiz_attempts WHERE account_id = ? AND quiz_id = ?
+                 AND status = 'submitted' ORDER BY started_at DESC""",
+            (account["id"], LINEAR_EQUATIONS_QUIZ_ID),
+        ).fetchall()
+    return {"attempts": [dict(row) for row in rows]}
+
+
+@app.post("/api/quiz/quadratic-equations/attempts")
+def start_or_resume_quadratic_equations_quiz(account: CurrentAccount) -> dict[str, object]:
+    require_quadratic_equations_eligibility(account)
+    now = quiz_now()
+    with database() as connection:
+        active = connection.execute(
+            """SELECT * FROM quiz_attempts
+               WHERE account_id = ? AND quiz_id = ? AND status = 'in_progress'
+               ORDER BY started_at LIMIT 1""",
+            (account["id"], QUADRATIC_EQUATIONS_QUIZ_ID),
+        ).fetchone()
+        if active is not None:
+            active = _tick_quiz_attempt(connection, active, now)
+            return _quiz_response(active, now)
+
+        states = {"0": {
+            "remaining_seconds": QUADRATIC_EQUATIONS_QUESTION_TIMER_SECONDS,
+            "active_since": now,
+            "locked": False,
+        }}
+        try:
+            cursor = connection.execute(
+                """INSERT INTO quiz_attempts
+                   (account_id, quiz_id, started_at, overall_deadline_at, status,
+                    current_question, question_states_json, answers_json,
+                    question_snapshot_json)
+                   VALUES (?, ?, ?, ?, 'in_progress', 0, ?, '{}', ?)""",
+                (account["id"], QUADRATIC_EQUATIONS_QUIZ_ID, now,
+                 now + QUADRATIC_EQUATIONS_OVERALL_TIMER_SECONDS, json.dumps(states),
+                 json.dumps(QUADRATIC_EQUATIONS_QUESTIONS, ensure_ascii=False)),
+            )
+        except sqlite3.IntegrityError:
+            active = connection.execute(
+                """SELECT * FROM quiz_attempts
+                   WHERE account_id = ? AND quiz_id = ? AND status = 'in_progress'
+                   ORDER BY started_at LIMIT 1""",
+                (account["id"], QUADRATIC_EQUATIONS_QUIZ_ID),
+            ).fetchone()
+            if active is None:
+                raise
+            active = _tick_quiz_attempt(connection, active, now)
+            return _quiz_response(active, now)
+        attempt = _load_quadratic_equations_attempt(connection, cursor.lastrowid, account["id"])
+        return _quiz_response(attempt, now)
+
+
+@app.get("/api/quiz/quadratic-equations/attempts/{attempt_id}")
+def get_quadratic_equations_quiz_state(
+    attempt_id: int, account: CurrentAccount,
+) -> dict[str, object]:
+    now = quiz_now()
+    with database() as connection:
+        attempt = _load_quadratic_equations_attempt(connection, attempt_id, account["id"])
+        attempt = _tick_quiz_attempt(connection, attempt, now)
+        return _quiz_response(attempt, now)
+
+
+@app.post("/api/quiz/quadratic-equations/attempts/{attempt_id}/answer")
+def save_quadratic_equations_quiz_answer(
+    attempt_id: int, payload: QuizAnswerRequest, account: CurrentAccount,
+) -> dict[str, object]:
+    now = quiz_now()
+    with database() as connection:
+        attempt = _load_quadratic_equations_attempt(connection, attempt_id, account["id"])
+        attempt = _tick_quiz_attempt(connection, attempt, now)
+        if attempt["status"] != "in_progress":
+            return _quiz_result_payload(attempt)
+        if payload.question_index >= len(_attempt_questions(attempt)):
+            raise HTTPException(status_code=422, detail="That question is outside this quiz.")
+        if payload.question_index != attempt["current_question"]:
+            raise HTTPException(status_code=409, detail="Navigate to this question before answering it.")
+        states = json.loads(attempt["question_states_json"])
+        if states.get(str(payload.question_index), {}).get("locked"):
+            raise HTTPException(status_code=409, detail="This question's timer has expired.")
+        answers = json.loads(attempt["answers_json"])
+        answers[str(payload.question_index)] = payload.option
+        connection.execute(
+            "UPDATE quiz_attempts SET answers_json = ? WHERE id = ?",
+            (json.dumps(answers), attempt_id),
+        )
+        attempt = _load_quadratic_equations_attempt(connection, attempt_id, account["id"])
+        return _quiz_response(attempt, now)
+
+
+@app.post("/api/quiz/quadratic-equations/attempts/{attempt_id}/navigate")
+def navigate_quadratic_equations_quiz(
+    attempt_id: int, payload: QuizNavigationRequest, account: CurrentAccount,
+) -> dict[str, object]:
+    now = quiz_now()
+    with database() as connection:
+        attempt = _load_quadratic_equations_attempt(connection, attempt_id, account["id"])
+        attempt = _tick_quiz_attempt(connection, attempt, now)
+        if attempt["status"] != "in_progress":
+            return _quiz_result_payload(attempt)
+        questions = _attempt_questions(attempt)
+        if payload.question_index >= len(questions):
+            raise HTTPException(status_code=422, detail="That question is outside this quiz.")
+        states = json.loads(attempt["question_states_json"])
+        target_key = str(payload.question_index)
+        if target_key not in states:
+            states[target_key] = {
+                "remaining_seconds": QUADRATIC_EQUATIONS_QUESTION_TIMER_SECONDS,
+                "active_since": None,
+                "locked": False,
+            }
+        previous = states.get(str(attempt["current_question"]))
+        if previous is not None:
+            previous["active_since"] = None
+        target = states[target_key]
+        target["active_since"] = now if not target.get("locked") else None
+        connection.execute(
+            "UPDATE quiz_attempts SET current_question = ?, question_states_json = ? WHERE id = ?",
+            (payload.question_index, json.dumps(states), attempt_id),
+        )
+        attempt = _load_quadratic_equations_attempt(connection, attempt_id, account["id"])
+        return _quiz_response(attempt, now)
+
+
+@app.post("/api/quiz/quadratic-equations/attempts/{attempt_id}/submit")
+def submit_quadratic_equations_quiz(
+    attempt_id: int, account: CurrentAccount,
+) -> dict[str, object]:
+    now = quiz_now()
+    with database() as connection:
+        attempt = _load_quadratic_equations_attempt(connection, attempt_id, account["id"])
+        attempt = _tick_quiz_attempt(connection, attempt, now)
+        if attempt["status"] == "in_progress":
+            attempt = _finish_quiz_attempt(connection, attempt, now)
+        return _quiz_result_payload(attempt)
+
+
+@app.get("/api/quiz/quadratic-equations/attempts/{attempt_id}/results")
+def get_quadratic_equations_quiz_results(
+    attempt_id: int, account: CurrentAccount,
+) -> dict[str, object]:
+    now = quiz_now()
+    with database() as connection:
+        attempt = _load_quadratic_equations_attempt(connection, attempt_id, account["id"])
+        attempt = _tick_quiz_attempt(connection, attempt, now)
+        return _quiz_result_payload(attempt)
+
+
+@app.get("/api/quiz/quadratic-equations/history")
+def quadratic_equations_quiz_history(account: CurrentAccount) -> dict[str, object]:
+    with database() as connection:
+        rows = connection.execute(
+            """SELECT id, started_at, submitted_at, correct_count AS correct, incorrect_count,
+                      unanswered_count, final_score, accuracy, time_taken_seconds
+               FROM quiz_attempts WHERE account_id = ? AND quiz_id = ?
+                 AND status = 'submitted' ORDER BY started_at DESC""",
+            (account["id"], QUADRATIC_EQUATIONS_QUIZ_ID),
+        ).fetchall()
+    return {"attempts": [dict(row) for row in rows]}
+
+
+@app.post("/api/quiz/arithmetic-progressions/attempts")
+def start_or_resume_arithmetic_progressions_quiz(account: CurrentAccount) -> dict[str, object]:
+    require_arithmetic_progressions_eligibility(account)
+    now = quiz_now()
+    with database() as connection:
+        active = connection.execute(
+            """SELECT * FROM quiz_attempts
+               WHERE account_id = ? AND quiz_id = ? AND status = 'in_progress'
+               ORDER BY started_at LIMIT 1""",
+            (account["id"], ARITHMETIC_PROGRESSIONS_QUIZ_ID),
+        ).fetchone()
+        if active is not None:
+            active = _tick_quiz_attempt(connection, active, now)
+            return _quiz_response(active, now)
+
+        states = {"0": {
+            "remaining_seconds": ARITHMETIC_PROGRESSIONS_QUESTION_TIMER_SECONDS,
+            "active_since": now,
+            "locked": False,
+        }}
+        try:
+            cursor = connection.execute(
+                """INSERT INTO quiz_attempts
+                   (account_id, quiz_id, started_at, overall_deadline_at, status,
+                    current_question, question_states_json, answers_json,
+                    question_snapshot_json)
+                   VALUES (?, ?, ?, ?, 'in_progress', 0, ?, '{}', ?)""",
+                (account["id"], ARITHMETIC_PROGRESSIONS_QUIZ_ID, now,
+                 now + ARITHMETIC_PROGRESSIONS_OVERALL_TIMER_SECONDS,
+                 json.dumps(states), json.dumps(ARITHMETIC_PROGRESSIONS_QUESTIONS, ensure_ascii=False)),
+            )
+        except sqlite3.IntegrityError:
+            active = connection.execute(
+                """SELECT * FROM quiz_attempts
+                   WHERE account_id = ? AND quiz_id = ? AND status = 'in_progress'
+                   ORDER BY started_at LIMIT 1""",
+                (account["id"], ARITHMETIC_PROGRESSIONS_QUIZ_ID),
+            ).fetchone()
+            if active is None:
+                raise
+            active = _tick_quiz_attempt(connection, active, now)
+            return _quiz_response(active, now)
+        attempt = _load_arithmetic_progressions_attempt(connection, cursor.lastrowid, account["id"])
+        return _quiz_response(attempt, now)
+
+
+@app.get("/api/quiz/arithmetic-progressions/attempts/{attempt_id}")
+def get_arithmetic_progressions_quiz_state(
+    attempt_id: int, account: CurrentAccount,
+) -> dict[str, object]:
+    now = quiz_now()
+    with database() as connection:
+        attempt = _load_arithmetic_progressions_attempt(connection, attempt_id, account["id"])
+        attempt = _tick_quiz_attempt(connection, attempt, now)
+        return _quiz_response(attempt, now)
+
+
+@app.post("/api/quiz/arithmetic-progressions/attempts/{attempt_id}/answer")
+def save_arithmetic_progressions_quiz_answer(
+    attempt_id: int, payload: QuizAnswerRequest, account: CurrentAccount,
+) -> dict[str, object]:
+    now = quiz_now()
+    with database() as connection:
+        attempt = _load_arithmetic_progressions_attempt(connection, attempt_id, account["id"])
+        attempt = _tick_quiz_attempt(connection, attempt, now)
+        if attempt["status"] != "in_progress":
+            return _quiz_result_payload(attempt)
+        if payload.question_index >= len(_attempt_questions(attempt)):
+            raise HTTPException(status_code=422, detail="That question is outside this quiz.")
+        if payload.question_index != attempt["current_question"]:
+            raise HTTPException(status_code=409, detail="Navigate to this question before answering it.")
+        states = json.loads(attempt["question_states_json"])
+        if states.get(str(payload.question_index), {}).get("locked"):
+            raise HTTPException(status_code=409, detail="This question's timer has expired.")
+        answers = json.loads(attempt["answers_json"])
+        answers[str(payload.question_index)] = payload.option
+        connection.execute(
+            "UPDATE quiz_attempts SET answers_json = ? WHERE id = ?",
+            (json.dumps(answers), attempt_id),
+        )
+        attempt = _load_arithmetic_progressions_attempt(connection, attempt_id, account["id"])
+        return _quiz_response(attempt, now)
+
+
+@app.post("/api/quiz/arithmetic-progressions/attempts/{attempt_id}/navigate")
+def navigate_arithmetic_progressions_quiz(
+    attempt_id: int, payload: QuizNavigationRequest, account: CurrentAccount,
+) -> dict[str, object]:
+    now = quiz_now()
+    with database() as connection:
+        attempt = _load_arithmetic_progressions_attempt(connection, attempt_id, account["id"])
+        attempt = _tick_quiz_attempt(connection, attempt, now)
+        if attempt["status"] != "in_progress":
+            return _quiz_result_payload(attempt)
+        questions = _attempt_questions(attempt)
+        if payload.question_index >= len(questions):
+            raise HTTPException(status_code=422, detail="That question is outside this quiz.")
+        states = json.loads(attempt["question_states_json"])
+        target_key = str(payload.question_index)
+        if target_key not in states:
+            states[target_key] = {
+                "remaining_seconds": ARITHMETIC_PROGRESSIONS_QUESTION_TIMER_SECONDS,
+                "active_since": None,
+                "locked": False,
+            }
+        previous = states.get(str(attempt["current_question"]))
+        if previous is not None:
+            previous["active_since"] = None
+        target = states[target_key]
+        target["active_since"] = now if not target.get("locked") else None
+        connection.execute(
+            "UPDATE quiz_attempts SET current_question = ?, question_states_json = ? WHERE id = ?",
+            (payload.question_index, json.dumps(states), attempt_id),
+        )
+        attempt = _load_arithmetic_progressions_attempt(connection, attempt_id, account["id"])
+        return _quiz_response(attempt, now)
+
+
+@app.post("/api/quiz/arithmetic-progressions/attempts/{attempt_id}/submit")
+def submit_arithmetic_progressions_quiz(
+    attempt_id: int, account: CurrentAccount,
+) -> dict[str, object]:
+    now = quiz_now()
+    with database() as connection:
+        attempt = _load_arithmetic_progressions_attempt(connection, attempt_id, account["id"])
+        attempt = _tick_quiz_attempt(connection, attempt, now)
+        if attempt["status"] == "in_progress":
+            attempt = _finish_quiz_attempt(connection, attempt, now)
+        return _quiz_result_payload(attempt)
+
+
+@app.get("/api/quiz/arithmetic-progressions/attempts/{attempt_id}/results")
+def get_arithmetic_progressions_quiz_results(
+    attempt_id: int, account: CurrentAccount,
+) -> dict[str, object]:
+    now = quiz_now()
+    with database() as connection:
+        attempt = _load_arithmetic_progressions_attempt(connection, attempt_id, account["id"])
+        attempt = _tick_quiz_attempt(connection, attempt, now)
+        return _quiz_result_payload(attempt)
+
+
+@app.get("/api/quiz/arithmetic-progressions/history")
+def arithmetic_progressions_quiz_history(account: CurrentAccount) -> dict[str, object]:
+    with database() as connection:
+        rows = connection.execute(
+            """SELECT id, started_at, submitted_at, correct_count AS correct, incorrect_count,
+                      unanswered_count, final_score, accuracy, time_taken_seconds
+               FROM quiz_attempts WHERE account_id = ? AND quiz_id = ?
+                 AND status = 'submitted' ORDER BY started_at DESC""",
+            (account["id"], ARITHMETIC_PROGRESSIONS_QUIZ_ID),
+        ).fetchall()
+    return {"attempts": [dict(row) for row in rows]}
+
+
+@app.get("/api/quiz/progress")
+def quiz_progress(account: CurrentAccount) -> dict[str, object]:
+    """Return real, private summaries of this learner's submitted chapter quizzes."""
+    titles = {
+        LEGACY_REAL_NUMBERS_QUIZ_ID: ("Real Numbers · previous version", "/real-numbers/quiz"),
+        REAL_NUMBERS_QUIZ_ID: ("Real Numbers", "/real-numbers/quiz"),
+        POLYNOMIALS_QUIZ_ID: ("Polynomials", "/polynomials/quiz"),
+        LINEAR_EQUATIONS_QUIZ_ID: ("Pair of Linear Equations", "/linear-equations/quiz"),
+        QUADRATIC_EQUATIONS_QUIZ_ID: ("Quadratic Equations", "/quadratic-equations/quiz"),
+        ARITHMETIC_PROGRESSIONS_QUIZ_ID: ("Arithmetic Progressions", "/arithmetic-progressions/quiz"),
+    }
+    with database() as connection:
+        rows = connection.execute(
+            """SELECT quiz_id, submitted_at, final_score, accuracy, time_taken_seconds,
+                      question_snapshot_json
+               FROM quiz_attempts WHERE account_id = ? AND status = 'submitted'
+               ORDER BY submitted_at DESC""",
+            (account["id"],),
+        ).fetchall()
+    grouped: dict[str, list[sqlite3.Row]] = {}
+    for row in rows:
+        if row["quiz_id"] in titles:
+            grouped.setdefault(row["quiz_id"], []).append(row)
+    quizzes = []
+    for quiz_id, quiz_rows in grouped.items():
+        title, href = titles[quiz_id]
+        best_attempt = max(quiz_rows, key=lambda row: row["accuracy"])
+        quizzes.append({
+            "quizId": quiz_id,
+            "title": title,
+            "href": href,
+            "attemptCount": len(quiz_rows),
+            "bestScore": best_attempt["final_score"],
+            "bestTotalQuestions": len(json.loads(best_attempt["question_snapshot_json"] or "[]")),
+            "latestScore": quiz_rows[0]["final_score"],
+            "latestTotalQuestions": len(json.loads(quiz_rows[0]["question_snapshot_json"] or "[]")),
+            "latestAccuracy": quiz_rows[0]["accuracy"],
+            "latestSubmittedAt": quiz_rows[0]["submitted_at"],
+            "latestTimeTakenSeconds": quiz_rows[0]["time_taken_seconds"],
+        })
+    total_attempts = sum(item["attemptCount"] for item in quizzes)
+    average_accuracy = (
+        round(sum(float(row["accuracy"]) for quiz_id in grouped for row in grouped[quiz_id]) / total_attempts, 1)
+        if total_attempts else None
+    )
+    return {"totalAttempts": total_attempts, "averageAccuracy": average_accuracy, "quizzes": quizzes}
 
 
 @app.post("/api/auth/register", status_code=status.HTTP_201_CREATED)
